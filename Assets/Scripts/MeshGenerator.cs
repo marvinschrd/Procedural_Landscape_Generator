@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using TreeEditor;
 using UnityEngine;
 
 public static class MeshGenerator 
 {
-   public static MeshData GenerateMesh(float [,] terrainHeighMap)
+   public static MeshData GenerateMesh(float [,] terrainHeighMap, float heightMultiplier, AnimationCurve heightCurve)
    {
       int width = terrainHeighMap.GetLength(0);
       int height = terrainHeighMap.GetLength(1);
@@ -20,7 +21,8 @@ public static class MeshGenerator
          for (int x = 0; x < width; ++x)
          {
             // give the terrain height map value for the y vertice value to get height. X and Z values are centered using topleft
-            meshData.vertices[vertexIndex] = new Vector3(topLeftx + x,terrainHeighMap[x,y],topLeftz - y);
+            // Y value is multiplied with height multiplier in order to get actual height variation
+            meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeighMap[x, y])* heightMultiplier,topLeftz - y);
             meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
 
             // Check to ignore triangles when on the edge of the map

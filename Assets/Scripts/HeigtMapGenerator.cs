@@ -7,31 +7,41 @@ using Random = System.Random;
 
 public class HeigtMapGenerator : MonoBehaviour
 {
+    private const int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
     [Header("Map Values")]
-    [SerializeField] private int mapWidth = 0;
-    [SerializeField] private int mapHeigth = 0;
     [SerializeField] private float noiseScale = 0f;
     [SerializeField] private int octaves = 0;
-    
+    [SerializeField] public float meshHeightMultiplier = 0;
+
     [Range(0,1)]
     [SerializeField] private float persistance = 0.5f;
     [SerializeField] private float lacunarity = 2f;
 
     [SerializeField] private int seed;
     [SerializeField] private Vector2 offset;
+    [SerializeField] private AnimationCurve heightCurve;
     
     public bool autoUpdateMap = false;
-    
+    public bool useFallOffMap = false;
+    [SerializeField] private AnimationCurve falloffMapCurve;
+
+    public enum NoiseType
+    {
+        PERLINNOISE,
+        SIMPLEXNOISE
+    }
+    public NoiseType noiseType = NoiseType.PERLINNOISE;
     
     public enum MapDrawMode
     {
         NOISEMAP,
         COLORMAP,
-        MESH
+        MESH,
+        FALLOFMAP
     }
     public MapDrawMode drawMode = MapDrawMode.NOISEMAP;
     public TerrainType[] mapRegions;
-
+    private float[,] fallOffMap;
     
     [System.Serializable]
     public struct TerrainType
@@ -50,8 +60,8 @@ public class HeigtMapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(mapWidth, mapHeigth, seed, noiseScale ,octaves, persistance, lacunarity, offset);
-        Color[] colorMap = new Color[mapHeigth * mapWidth];
+        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType);
+        Color[] colorMap = new Color[chunkSize * chunkSize];
         
 
          DetermineTerrainType(noiseMap,colorMap);
@@ -65,46 +75,57 @@ public class HeigtMapGenerator : MonoBehaviour
         }
         else if (drawMode == MapDrawMode.COLORMAP)
         {
-            Texture2D texture = TextureGenerator.TextureFromColorMap(colorMap, mapWidth, mapHeigth);
+            Texture2D texture = TextureGenerator.TextureFromColorMap(colorMap, chunkSize, chunkSize);
             mapDisplay.DrawTexture(texture);
         }
         else if (drawMode == MapDrawMode.MESH)
         {
-            mapDisplay.DrawMesh(MeshGenerator.GenerateMesh(noiseMap),TextureGenerator.TextureFromColorMap(colorMap, mapWidth, mapHeigth));
+            mapDisplay.DrawMesh(MeshGenerator.GenerateMesh(noiseMap, meshHeightMultiplier, heightCurve),TextureGenerator.TextureFromColorMap(colorMap, chunkSize, chunkSize));
+        }
+        else if (drawMode == MapDrawMode.FALLOFMAP)
+        {
+            Texture2D texture = TextureGenerator.TextureFromHeightMap(FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve));
+            mapDisplay.DrawTexture(texture);
         }
     }
     void OnValidate() {
-        if (mapWidth < 1) {
-            mapWidth = 1;
-        }
-        if (mapHeigth < 1) {
-            mapHeigth = 1;
-        }
         if (lacunarity < 1) {
             lacunarity = 1;
         }
         if (octaves < 0) {
             octaves = 0;
         }
+
+        fallOffMap = FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve);
     }
 
 
     private void DetermineTerrainType(float [,] noiseMap, Color [] colorMap)
     {
-        for (int y = 0; y < mapHeigth; y++)
+        for (int y = 0; y < chunkSize; y++)
         {
-            for (int x = 0; x < mapWidth; x++)
+            for (int x = 0; x < chunkSize; x++)
             {
+                // Using the falloff map
+                if (useFallOffMap)
+                {
+                    noiseMap[x, y] = Mathf.Clamp01(noiseMap[x, y] - fallOffMap[x, y]) ;
+                }
                 float currentHeight = noiseMap[x, y];
                 for (int i = 0; i < mapRegions.Length; i++)
                 {
                     if (currentHeight <= mapRegions[i].height)
                     {
-                        colorMap[y * mapWidth + x] = mapRegions[i].terrainColor;
+                        colorMap[y * chunkSize + x] = mapRegions[i].terrainColor;
                         break;
                     }
                 }
             }
         }
+    }
+
+    private void Awake()
+    {
+        fallOffMap = FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve);
     }
 }

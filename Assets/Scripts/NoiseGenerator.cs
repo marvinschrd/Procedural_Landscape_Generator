@@ -7,7 +7,7 @@ using UnityEngine;
 // This class handle the generation of noise in order to be used to create various HeigtMaps
 public class NoiseGenerator  
 {
-   public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset) {
+   public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset, HeigtMapGenerator.NoiseType noiseType) {
       float[,] noiseMap = new float[mapWidth,mapHeight];
 
       // Use the seed to generate the same map regarding the given seed
@@ -20,12 +20,33 @@ public class NoiseGenerator
          octaveOffsets [i] = new Vector2 (offsetX, offsetY);
       }
 
+      // Create and configure FastNoise object
+      FastNoiseLite noise = new FastNoiseLite();
+      scale /= 60f;
+      // Currently reducing the scale because of the apparent huge difference in size between
+      // the unity perlin noise and Fastnoiselite opensimplexnoise
+      if (noiseType == HeigtMapGenerator.NoiseType.SIMPLEXNOISE)
+      {
+         //scale /= 60f;
+         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+      }
+      else if (noiseType == HeigtMapGenerator.NoiseType.PERLINNOISE)
+      {
+         noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+      }
+      
       if (scale <= 0) {
          scale = 0.0001f;
       }
+      
+      
 
       float maxNoiseHeight = float.MinValue;
       float minNoiseHeight = float.MaxValue;
+      
+      
+      
+      
 
       // Calculate the half witdh and half heigth in order to zoom in the center of the map instead of into the corner
       float halfWidth = mapWidth / 2f;
@@ -42,10 +63,20 @@ public class NoiseGenerator
             for (int i = 0; i < octaves; i++) {
                float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
                float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
-
-               float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1;
-               noiseHeight += perlinValue * amplitude;
-
+               
+               if (noiseType == HeigtMapGenerator.NoiseType.SIMPLEXNOISE)
+               {
+                  // Gather noise data
+                  float simplexValue = noise.GetNoise(sampleX, sampleY) * 2 - 1 ;
+                  noiseHeight += simplexValue * amplitude;
+               }
+               else if (noiseType == HeigtMapGenerator.NoiseType.PERLINNOISE)
+               {
+                  //float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1;
+                  float perlinValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+                  noiseHeight += perlinValue * amplitude;
+               }
+               
                amplitude *= persistance;
                frequency *= lacunarity;
             }
