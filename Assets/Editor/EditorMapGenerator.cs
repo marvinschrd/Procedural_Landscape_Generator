@@ -5,12 +5,12 @@ using UnityEditor;
 using UnityEngine.UIElements;
 
 // Class to generate map in editor without having to start game or project
-[CustomEditor(typeof(HeigtMapGenerator))]
+[CustomEditor(typeof(HeightMapGenerator))]
 public class EditorMapGenerator : Editor
 {
     public override void OnInspectorGUI()
     {
-        HeigtMapGenerator mapGenerator = (HeigtMapGenerator)target;
+        HeightMapGenerator mapGenerator = (HeightMapGenerator)target;
 
         // allow for auto update if auto update is selected and value are changed
         if (DrawDefaultInspector())
