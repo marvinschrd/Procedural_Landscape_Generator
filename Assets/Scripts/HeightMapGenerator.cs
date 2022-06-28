@@ -23,6 +23,8 @@ public class HeightMapGenerator : MonoBehaviour
     
     public bool autoUpdateMap = false;
     public bool useFallOffMap = false;
+    public bool applyRidges = false;
+    public bool applyWarping = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
 
     public enum NoiseType
@@ -63,11 +65,21 @@ public class HeightMapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType);
+        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
+        if (applyWarping)
+        {
+            for (int x = 0; x < chunkSize; ++x)
+            {
+                for (int y = 0; y < chunkSize; ++y)
+                {
+                    noiseMap[x, y] = NoiseGenerator.Warping(new Vector2(x, y));
+                }
+                
+            }
+        }
         Color[] colorMap = new Color[chunkSize * chunkSize];
         
-
-         DetermineTerrainType(noiseMap,colorMap);
+        DetermineTerrainType(noiseMap,colorMap);
         
         MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
 
@@ -114,7 +126,9 @@ public class HeightMapGenerator : MonoBehaviour
                 {
                     noiseMap[x, y] = Mathf.Clamp01(noiseMap[x, y] - fallOffMap[x, y]) ;
                 }
-                
+
+                // maybe try to make the warping here, on the already generated noisemap/texture;
+
                 float currentHeight = noiseMap[x, y];
                 for (int i = 0; i < mapRegions.Length; i++)
                 {

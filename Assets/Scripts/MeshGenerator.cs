@@ -20,7 +20,7 @@ public static class MeshGenerator
       {
          for (int x = 0; x < width; ++x)
          {
-            // give the terrain height map value for the y vertice value to get height. X and Z values are centered using topleft
+            // give the terrain height map value for the y vertice to get height. X and Z values are centered using topleft
             // Y value is multiplied with height multiplier in order to get actual height variation
             meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeighMap[x, y])* heightMultiplier,topLeftz - y);
             meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
