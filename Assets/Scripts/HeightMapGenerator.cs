@@ -19,6 +19,9 @@ public class HeightMapGenerator : MonoBehaviour
 
     [SerializeField] private int seed;
     [SerializeField] private Vector2 offset;
+    
+    [SerializeField] public Noise[] noises;
+    
     [SerializeField] private AnimationCurve heightCurve;
     
     public bool autoUpdateMap = false;
@@ -47,7 +50,7 @@ public class HeightMapGenerator : MonoBehaviour
     public MapDrawMode drawMode = MapDrawMode.NOISEMAP;
     public TerrainType[] mapRegions;
     private float[,] fallOffMap;
-    
+
     [System.Serializable]
     public struct TerrainType
     {
@@ -65,7 +68,10 @@ public class HeightMapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
+        //heightCurve.MoveKey(1, new Keyframe(0.9f, 0.1f));
+       // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
+       float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale ,noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType, applyRidges);
+
         if (applyWarping)
         {
             for (int x = 0; x < chunkSize; ++x)

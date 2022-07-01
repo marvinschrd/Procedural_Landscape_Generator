@@ -16,7 +16,7 @@ public static class NoiseGenerator
  private static float scale_;
  private static int octaves_;
  private static  Vector2[] octaveOffsets_;
- public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset, HeightMapGenerator.NoiseType noiseType, bool applyRidges)
+ public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges)
  {
     mapWidth_ = mapWidth;
     mapHeight_ = mapHeight;

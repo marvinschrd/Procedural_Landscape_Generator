@@ -74,7 +74,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 200}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 39
+  controlID: 63
 --- !u!114 &4
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -223,7 +223,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 200}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 40
+  controlID: 64
 --- !u!114 &10
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -248,7 +248,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 41
+  controlID: 65
 --- !u!114 &11
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -330,9 +330,9 @@ MonoBehaviour:
     m_IsLocked: 0
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: 565a0000
-    m_LastClickedID: 23126
-    m_ExpandedIDs: 00000000fe590000345a000000ca9a3bffffff7f
+    m_SelectedIDs: 585a0000
+    m_LastClickedID: 23128
+    m_ExpandedIDs: 00000000085a0000365a000000ca9a3bffffff7f
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -360,7 +360,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000fe590000
+    m_ExpandedIDs: 00000000085a0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -385,9 +385,9 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 5c5a0000
-    m_LastClickedInstanceID: 23132
-    m_HadKeyboardFocusLastEvent: 1
+    m_SelectedInstanceIDs: ba590000
+    m_LastClickedInstanceID: 22970
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs: c6230000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -488,9 +488,9 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: b0590000
-      m_LastClickedID: 22960
-      m_ExpandedIDs: 30fbffff
+      m_SelectedIDs: ba590000
+      m_LastClickedID: 22970
+      m_ExpandedIDs: 32fbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -739,13 +739,13 @@ MonoBehaviour:
   m_PlayAudio: 0
   m_AudioPlay: 0
   m_Position:
-    m_Target: {x: 2249.1812, y: -2472.357, z: 1995.0952}
+    m_Target: {x: 4285.495, y: -177.0448, z: 1848.019}
     speed: 2
-    m_Value: {x: 2249.1812, y: -2472.357, z: 1995.0952}
+    m_Value: {x: 4285.495, y: -177.0448, z: 1848.019}
   m_RenderMode: 0
   m_CameraMode:
-    drawMode: 2
-    name: Shaded Wireframe
+    drawMode: 0
+    name: Shaded
     section: Shading Mode
   m_ValidateTrueMetals: 0
   m_DoValidateTrueMetals: 0
@@ -788,20 +788,20 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.52131397, y: -0.07083243, z: 0.043475542, w: 0.8493295}
+    m_Target: {x: 0.15829684, y: 0.37439716, z: -0.06510381, w: 0.91137403}
     speed: 2
-    m_Value: {x: 0.52003, y: -0.0708963, z: 0.043368455, w: 0.85009515}
+    m_Value: {x: 0.15829112, y: 0.37438363, z: -0.06510145, w: 0.91134113}
   m_Size:
-    m_Target: 1943.187
+    m_Target: 2488.9543
     speed: 2
-    m_Value: 1859.5092
+    m_Value: 2606.2349
   m_Ortho:
     m_Target: 0
     speed: 2
     m_Value: 0
   m_CameraSettings:
-    m_Speed: 0.9405301
-    m_SpeedNormalized: 0.47000006
+    m_Speed: 1.0005001
+    m_SpeedNormalized: 0.50000006
     m_SpeedMin: 0.001
     m_SpeedMax: 2
     m_EasingEnabled: 1
@@ -812,8 +812,8 @@ MonoBehaviour:
     m_FarClip: 10000
     m_DynamicClip: 1
     m_OcclusionCulling: 0
-  m_LastSceneViewRotation: {x: -0.032255273, y: -0.7849842, z: 0.6173184, w: -0.041016933}
-  m_LastSceneViewOrtho: 1
+  m_LastSceneViewRotation: {x: 0.53201336, y: 0.009546684, z: -0.006040204, w: 0.84669}
+  m_LastSceneViewOrtho: 0
   m_ReplacementShader: {fileID: 0}
   m_ReplacementString: 
   m_SceneVisActive: 1
