@@ -12,8 +12,8 @@ public class Noise
     
     [Header("Map Values")]
     [SerializeField] public float noiseScale = 0f;
-    [SerializeField] public int octaves = 0;
-    [SerializeField] public float meshHeightMultiplier = 0;
+    [SerializeField] public int octaves = 1;
+    [SerializeField] public float meshHeightMultiplier = 45f;
 
     [Range(0,1)]
     [SerializeField] public float persistance = 0.5f;

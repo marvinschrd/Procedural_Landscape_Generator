@@ -5,7 +5,7 @@ using UnityEngine;
 
 public static class MeshGenerator 
 {
-   public static MeshData GenerateMesh(float [,] terrainHeighMap, float heightMultiplier, AnimationCurve heightCurve)
+   public static MeshData GenerateMesh(float [,] terrainHeighMap, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve)
    {
       int width = terrainHeighMap.GetLength(0);
       int height = terrainHeighMap.GetLength(1);
@@ -13,24 +13,38 @@ public static class MeshGenerator
       float topLeftx = (width - 1)/(-2f);
       float topLeftz = (height - 1) / 2f;
 
-      MeshData meshData = new MeshData(width, height);
+
+      int meshLevelOfDetailIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
+      int verticesPerLine = (width - 1) / meshLevelOfDetailIncrement + 1;
+      
+      Debug.Log(verticesPerLine);
+      
+      MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
       int vertexIndex = 0;
 
-      for (int y = 0; y < height; ++y)
+      for (int y = 0; y < height; y+= meshLevelOfDetailIncrement)
       {
-         for (int x = 0; x < width; ++x)
+         for (int x = 0; x < width; x += meshLevelOfDetailIncrement)
          {
             // give the terrain height map value for the y vertice to get height. X and Z values are centered using topleft
             // Y value is multiplied with height multiplier in order to get actual height variation
-            meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeighMap[x, y])* heightMultiplier,topLeftz - y);
+            if (useCurve)
+            {
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeighMap[x, y])* heightMultiplier,topLeftz - y);
+            }
+            else
+            {
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeighMap[x, y]* heightMultiplier,topLeftz - y);
+            }
+
             meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
 
             // Check to ignore triangles when on the edge of the map
             if (x < width - 1 && y < height - 1)
             {
                // Creating both triangles of the square
-               meshData.AddTriangle(vertexIndex, vertexIndex + width +1, vertexIndex + width);
-               meshData.AddTriangle(vertexIndex + width + 1, vertexIndex, vertexIndex + 1);
+               meshData.AddTriangle(vertexIndex, vertexIndex + verticesPerLine +1, vertexIndex + verticesPerLine);
+               meshData.AddTriangle(vertexIndex + verticesPerLine + 1, vertexIndex, vertexIndex + 1);
             }
             
             vertexIndex++;
@@ -53,8 +67,8 @@ public class MeshData
    {
       vertices = new Vector3[meshWitdh * meshHeight];
       // Need to clarifie why it is done like that...
-      triangles = new int[(meshHeight-1)*(meshWitdh-1)*6];
-      UVS = new Vector2[vertices.Length];
+      UVS = new Vector2[meshWitdh * meshHeight];
+      triangles = new int[(meshWitdh-1)*(meshHeight-1)*6];
    }
    
 
