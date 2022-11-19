@@ -54,7 +54,68 @@ public static class MeshGenerator
        return meshData;
       //return meshData.CreateMesh();
    }
+   
+   
+   
+    public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve)
+   {
+      // int width = terrainHeightMap.GetLength(0);
+      // int height = terrainHeightMap.GetLength(1);
+      int width = chunkSize-1;
+      int height = chunkSize-1;
+      
+      float topLeftx = (width - 1)/(-2f);
+      float topLeftz = (height - 1) / 2f;
+
+
+      int meshLevelOfDetailIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
+      int verticesPerLine = (width - 1) / meshLevelOfDetailIncrement + 1;
+      
+      Debug.Log(verticesPerLine);
+      
+      MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
+      int vertexIndex = 0;
+
+      for (int y = 0; y < height; y+= meshLevelOfDetailIncrement)
+      {
+         for (int x = 0; x < width; x += meshLevelOfDetailIncrement)
+         {
+            // give the terrain height map value for the y vertice to get height. X and Z values are centered using topleft
+            // Y value is multiplied with height multiplier in order to get actual height variation
+            if (useCurve)
+            {
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeightMap[y * chunkSize + x])* heightMultiplier,topLeftz - y);
+            }
+            else
+            {
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeightMap[y * chunkSize + x]* heightMultiplier,topLeftz - y);
+            }
+
+            meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
+
+            // Check to ignore triangles when on the edge of the map
+            if (x < width - 1 && y < height - 1)
+            {
+               // Creating both triangles of the square
+               meshData.AddTriangle(vertexIndex, vertexIndex + verticesPerLine +1, vertexIndex + verticesPerLine);
+               meshData.AddTriangle(vertexIndex + verticesPerLine + 1, vertexIndex, vertexIndex + 1);
+            }
+            
+            vertexIndex++;
+         }
+      }
+       return meshData;
+      //return meshData.CreateMesh();
+   }
+   
 }
+
+
+
+
+
+
+
 
 public class MeshData
 {
@@ -99,3 +160,8 @@ public class MeshData
       return mesh;
    }
 }
+
+
+
+
+
