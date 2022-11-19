@@ -2,13 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using TreeEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public static class MeshGenerator 
 {
-   public static MeshData GenerateMesh(float [,] terrainHeighMap, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve)
+   public static MeshData GenerateMesh(float [,] terrainHeightMap, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve)
    {
-      int width = terrainHeighMap.GetLength(0);
-      int height = terrainHeighMap.GetLength(1);
+      int width = terrainHeightMap.GetLength(0);
+      int height = terrainHeightMap.GetLength(1);
       
       float topLeftx = (width - 1)/(-2f);
       float topLeftz = (height - 1) / 2f;
@@ -30,11 +31,11 @@ public static class MeshGenerator
             // Y value is multiplied with height multiplier in order to get actual height variation
             if (useCurve)
             {
-               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeighMap[x, y])* heightMultiplier,topLeftz - y);
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeightMap[x, y])* heightMultiplier,topLeftz - y);
             }
             else
             {
-               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeighMap[x, y]* heightMultiplier,topLeftz - y);
+               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeightMap[x, y]* heightMultiplier,topLeftz - y);
             }
 
             meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
@@ -88,6 +89,7 @@ public class MeshData
    public Mesh CreateMesh()
    {
       Mesh mesh = new Mesh();
+      mesh.indexFormat = IndexFormat.UInt32;
       mesh.vertices = vertices;
       mesh.triangles = triangles;
       mesh.uv = UVS;

@@ -16,6 +16,9 @@ public static class NoiseGenerator
  private static float scale_;
  private static int octaves_;
  private static  Vector2[] octaveOffsets_;
+ 
+ static float maxNoiseHeight_ = float.MinValue;
+ static float minNoiseHeight_ = float.MaxValue;
  public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges)
  {
     mapWidth_ = mapWidth;
@@ -77,56 +80,66 @@ public static class NoiseGenerator
       float halfWidth = mapWidth *0.5f;
       float halfHeight = mapHeight *0.5f;
       float noiseValue;
-
+      
+      //Loop for every cell of the terrain
       for (int y = 0; y < mapHeight; y++) {
          for (int x = 0; x < mapWidth; x++) {
 
             float amplitude = 1;
             float frequency = 1;
             float noiseHeight = 0;
+            
+            // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
+            // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
+
+            //Vector2 point = new Vector2(x, y);
            
            
             
                
+               //FBM starts here
+                for (int i = 0; i < octaves; i++) {
+                   float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
+                   float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
+                   // float sampleX = (x-halfWidth) * fr + octaveOffsets[i].x;
+                   // float sampleY = (y-halfHeight) * 1.2f + octaveOffsets[i].y;
+                   Vector2 point = new Vector2(sampleX, sampleY);
+                   // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+                   noiseValue = noise.GetNoise(point.x, point.y);
+                
+                   if (applyRidges)
+                   {
+                      float n = Mathf.Abs(noiseValue) * amplitude;
+                      n = 1f - n;
+                      noiseHeight += n * n;
+                   }
+                   else
+                   {
+                      noiseHeight += noiseValue * amplitude;
+                   }
+                
+                   amplitude *= persistance;
+                   frequency *= lacunarity;
+                }
+                
+                if (noiseHeight > maxNoiseHeight) {
+                   maxNoiseHeight = noiseHeight;
+                } else if (noiseHeight < minNoiseHeight) {
+                   minNoiseHeight = noiseHeight;
+                }
+                noiseMap [x, y] = noiseHeight;
 
-               for (int i = 0; i < octaves; i++) {
-                  float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
-                  float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
-                  Vector2 point = new Vector2(sampleX, sampleY);
-                  // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
-                  noiseValue = noise.GetNoise(point.x, point.y);
+              // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));
 
-                  if (applyRidges)
-                  {
-                     float n = Mathf.Abs(noiseValue) * amplitude;
-                     n = 1f - n;
-                     noiseHeight += n * n;
-                  }
-                  else
-                  {
-                     noiseHeight += noiseValue * amplitude;
-                  }
-               
-                  amplitude *= persistance;
-                  frequency *= lacunarity;
-               }
 
-               if (noiseHeight > maxNoiseHeight) {
-                  maxNoiseHeight = noiseHeight;
-               } else if (noiseHeight < minNoiseHeight) {
-                  minNoiseHeight = noiseHeight;
-               }
-               
-               noiseMap [x, y] = noiseHeight;
-            
          }
       }
-      // This loop purpose is to get the values back to 0-1
-      for (int y = 0; y < mapHeight; y++) {
-         for (int x = 0; x < mapWidth; x++) {
-            noiseMap [x, y] = Mathf.InverseLerp (minNoiseHeight, maxNoiseHeight, noiseMap [x, y]);
-         }
-      }
+      //This loop purpose is to get the values back to 0-1
+       for (int y = 0; y < mapHeight; y++) {
+          for (int x = 0; x < mapWidth; x++) {
+             noiseMap [x, y] = Mathf.InverseLerp (minNoiseHeight, maxNoiseHeight, noiseMap [x, y]);
+          }
+       }
 
       return noiseMap;
    }
@@ -140,15 +153,62 @@ public static class NoiseGenerator
       
       for (int i = 0; i < octaves_; ++i)
       {
-         float sampleX = (point.x-mapWidth_ *0.5f) / scale_ * frequency + octaveOffsets_[i].x;
-         float sampleY = (point.y-mapHeight_ * 0.5f) / scale_ * frequency + octaveOffsets_[i].y;
-         noiseSum += noise.GetNoise(sampleX * frequency, sampleY * frequency) * amplitude;
+         // float sampleX = (point.x-mapWidth_ *0.5f) / scale_ * frequency + octaveOffsets_[i].x;
+         // float sampleY = (point.y-mapHeight_ * 0.5f) / scale_ * frequency + octaveOffsets_[i].y;
+        // noiseSum += noise.GetNoise(point.x * frequency, point.y * frequency) * amplitude;
+         noiseSum += noise.GetNoise(point.x * frequency, point.y * frequency);
+         Debug.Log(noiseSum);
          frequency *= 2;
          amplitude *= 0.5f;
+      }
+      
+      if (noiseSum > maxNoiseHeight_) {
+         maxNoiseHeight_ = noiseSum;
+      } else if (noiseSum < minNoiseHeight_) {
+         minNoiseHeight_ = noiseSum;
       }
 
       return noiseSum;
    }
+
+// currently not working : do not use
+   static float FBM(Vector2 point)
+   {
+      float amplitude = 1;
+      float frequency = 1;
+      float noiseHeight = 0;
+      
+      for (int i = 0; i < octaves_; i++) {
+         // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+         float noiseValue = noise.GetNoise(point.x, point.y);
+
+         bool applyRidges = false;
+         if (applyRidges)
+         {
+            float n = Mathf.Abs(noiseValue) * amplitude;
+            n = 1f - n;
+            noiseHeight += n * n;
+         }
+         else
+         {
+            noiseHeight += noiseValue * amplitude;
+         }
+               
+         amplitude *= 0.5f;
+         frequency *= 2;
+      }
+
+      // if (noiseHeight > maxNoiseHeight) {
+      //    maxNoiseHeight = noiseHeight;
+      // } else if (noiseHeight < minNoiseHeight) {
+      //    minNoiseHeight = noiseHeight;
+      // }
+
+      return noiseHeight;
+   }
+   
+   
+   
 
   public static float Warping(Vector2 point)
    {
@@ -162,5 +222,20 @@ public static class NoiseGenerator
       return SimpleFBM(point +q * 5.0f);
 
    }
+
+ // static  private float[,] m = new float[2, 2] { { 0.8f, -0.6f }, { .6f, 0.8f } };
+ //  float DerivativeFBM(Vector2 point)
+ //  {
+ //     float a = 0;
+ //     float b = 1.0f;
+ //     Vector2 d = new Vector2(0, 0);
+ //
+ //     for (int i = 0; i <= 15; ++i)
+ //     {
+ //        Vector3 n = noise.GetNoise(point.x, point.y,0);
+ //        Debug.Log(Mathf.Floor(10.0F));   // Prints  10
+ //     }
+ //     
+ //  }
    
 }

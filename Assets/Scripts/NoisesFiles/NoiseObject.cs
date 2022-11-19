@@ -22,5 +22,4 @@ public class Noise
     [SerializeField] public int seed;
     [SerializeField] public Vector2 offset;
     
-    
 }

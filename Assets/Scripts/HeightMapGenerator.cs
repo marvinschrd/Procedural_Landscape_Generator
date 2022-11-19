@@ -7,19 +7,22 @@ using Random = System.Random;
 
 public class HeightMapGenerator : MonoBehaviour
 {
-    private const int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
+   // private const int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
+     [SerializeField] int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
+
     [Range(0,6)]
     [SerializeField] private int levelOfDetail = 0;
 
     [SerializeField] public Noise[] noises;
     private List<float[,]> heightmaps = new List<float[,]>();
 
+    [SerializeField] private int nmbOfChunks = 1;
+    private int[] mapChunks = new int[1];
+
     
     public bool autoUpdateMap = false;
     public bool useFallOffMap = false;
     public bool applyRidges = false;
-    public bool applyWarping = false;
-    public bool combineNoises = false;
     [SerializeField] private AnimationCurve heightCurve;
     public bool useHeightCurve = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
@@ -32,7 +35,7 @@ public class HeightMapGenerator : MonoBehaviour
         CUBICNOISE,
         VALUENOISE
     }
-    public NoiseType noiseType = NoiseType.PERLINNOISE;
+     NoiseType noiseType = NoiseType.PERLINNOISE;
     
     public enum MapDrawMode
     {
@@ -66,6 +69,8 @@ public class HeightMapGenerator : MonoBehaviour
        // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
        float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale ,noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType, applyRidges);
        float[,] secondNoiseMap = null;
+       
+       // Not used now because only one noise map is being created
        if (noises.Length > 2)
        {
            secondNoiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[2].seed,
@@ -73,30 +78,8 @@ public class HeightMapGenerator : MonoBehaviour
                noises[2].noiseType, false); 
        }
        // GenerateOthersHeigthmaps();
-       if (applyWarping)
-        {
-            for (int y = 0; y < chunkSize; ++y)
-            {
-                for (int x = 0; x < chunkSize; ++x)
-                {
-                    noiseMap[x, y] = NoiseGenerator.Warping(new Vector2(x, y));
-                }
-                
-            }
-        }
 
-        if (combineNoises)
-        {
-            for (int y = 0; y < chunkSize; ++y)
-            {
-                for (int x = 0; x < chunkSize; ++x)
-                {
-                    noiseMap[x, y] = Mathf.Clamp01(noiseMap[x, y] *(1.5f*(secondNoiseMap[x, y])) );
-                }
-            }
-        }
-        
-        Color[] colorMap = new Color[chunkSize * chunkSize];
+       Color[] colorMap = new Color[chunkSize * chunkSize];
         
         DetermineTerrainType(noiseMap,colorMap);
         
@@ -161,6 +144,7 @@ public class HeightMapGenerator : MonoBehaviour
         }
     }
 
+    // would be used if more than 1 heightmap (noise) would be generated and used
     public void GenerateOthersHeigthmaps()
     {
         // 2 because 0 is empty (editor problems) and 1 is already the base heightmap for the terrain
