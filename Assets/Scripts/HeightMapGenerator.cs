@@ -13,11 +13,13 @@ public class HeightMapGenerator : MonoBehaviour
     [Range(0,6)]
     [SerializeField] private int levelOfDetail = 0;
 
-    [SerializeField] public Noise[] noises;
+    [SerializeField] private Noise[] noises;
     private List<float[,]> heightmaps = new List<float[,]>();
 
     [SerializeField] private int nmbOfChunks = 1;
     private int[] mapChunks = new int[1];
+
+    [SerializeField] private Erosion erosionParameters;
 
     
     public bool autoUpdateMap = false;
@@ -25,6 +27,7 @@ public class HeightMapGenerator : MonoBehaviour
     public bool applyRidges = false;
     [SerializeField] private AnimationCurve heightCurve;
     public bool useHeightCurve = false;
+    [SerializeField] private bool applyErosion = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
 
     public enum NoiseType
@@ -58,6 +61,7 @@ public class HeightMapGenerator : MonoBehaviour
     }
 
 
+
     public void RandomiseValues()
     {
         noises[1].seed = UnityEngine.Random.Range(0, 1000000);
@@ -69,8 +73,6 @@ public class HeightMapGenerator : MonoBehaviour
         //heightCurve.MoveKey(1, new Keyframe(0.9f, 0.1f));
        // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
        
-      //float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale ,noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType, applyRidges);
-       float[,] secondNoiseMap = null;
        float[] noiseMap2 = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
            noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
            applyRidges);
@@ -105,7 +107,7 @@ public class HeightMapGenerator : MonoBehaviour
         {
             mapDisplay.DrawMesh(
                 MeshGenerator.GenerateMesh2(noiseMap2, chunkSize, noises[1].meshHeightMultiplier, levelOfDetail, heightCurve,
-                    useHeightCurve), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
+                    useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
         }
         else if (drawMode == MapDrawMode.FALLOFMAP)
         {

@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using TreeEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -57,7 +59,7 @@ public static class MeshGenerator
    
    
    
-    public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve)
+    public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve, Erosion erosionParameters, bool applyErosion)
    {
       // int width = terrainHeightMap.GetLength(0);
       // int height = terrainHeightMap.GetLength(1);
@@ -71,10 +73,12 @@ public static class MeshGenerator
       int meshLevelOfDetailIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
       int verticesPerLine = (width - 1) / meshLevelOfDetailIncrement + 1;
       
-      Debug.Log(verticesPerLine);
+     // Debug.Log(verticesPerLine);
       
       MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
       int vertexIndex = 0;
+      
+      if (applyErosion){ HydraulicErosion.Erode2(terrainHeightMap, chunkSize, erosionParameters); Debug.Log("applied erosion");}
 
       for (int y = 0; y < height; y+= meshLevelOfDetailIncrement)
       {

@@ -18,6 +18,6 @@ public class MapPlaneDisplayer : MonoBehaviour
     public void DrawMesh(MeshData meshData, Texture2D meshtexture)
     {
         meshFilter.sharedMesh = meshData.CreateMesh();
-        meshRenderer.sharedMaterial.mainTexture = meshtexture;
+       meshRenderer.sharedMaterial.mainTexture = meshtexture;
     }
 }

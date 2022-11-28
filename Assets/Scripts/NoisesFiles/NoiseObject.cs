@@ -6,8 +6,7 @@ using UnityEngine;
 [System.Serializable]
 public class Noise
 {
-
-
+    
     public HeightMapGenerator.NoiseType noiseType = HeightMapGenerator.NoiseType.PERLINNOISE;
     
     [Header("Map Values")]

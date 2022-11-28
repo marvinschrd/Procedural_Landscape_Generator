@@ -22,7 +22,6 @@ public static class TextureGenerator
       texture.wrapMode = TextureWrapMode.Clamp;
       texture.SetPixels(colorMap);
       texture.Apply();
-      Debug.Log(texture.format);
       return texture;
    }
 
