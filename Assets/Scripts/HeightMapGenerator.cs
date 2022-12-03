@@ -17,6 +17,7 @@ public class HeightMapGenerator : MonoBehaviour
     [SerializeField] private int levelOfDetail = 0;
 
     [SerializeField] private Noise[] noises;
+    private int octaves = 0;
     private List<float[,]> heightmaps = new List<float[,]>();
 
     [SerializeField] private int nmbOfChunks = 1;
@@ -32,6 +33,29 @@ public class HeightMapGenerator : MonoBehaviour
     public bool useHeightCurve = false;
     [SerializeField] private bool applyErosion = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
+
+
+    //Shader tests not working
+    // [SerializeField] private Material mapMaterial;
+    // [SerializeField] private Color[] shaderColors;
+    // [Range(0,1)]
+    // [SerializeField] private float[] baseStartHeights;
+    // public float minTerrainMinHeight
+    // {
+    //     get
+    //     {
+    //         return noises[1].meshHeightMultiplier * heightCurve.Evaluate(0);
+    //     }
+    // }
+    // public float maxTerrainHeight
+    // {
+    //     get
+    //     {
+    //         return noises[1].meshHeightMultiplier * heightCurve.Evaluate(1);
+    //     }
+    // }
+    
+    
 
     public enum NoiseType
     {
@@ -83,13 +107,16 @@ public class HeightMapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
+        Debug.Log(noises.Length);
+        octaves = noises.Length > 1 ? noises.Length - 1 : noises.Length;
+       Debug.Log(octaves);
         // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
        // float[,] noiseMap1 = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
        //     noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
        //     applyRidges);
        float[] noiseMap2 = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
-           noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
-           applyRidges);
+           octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
+           applyRidges, noises);
 
 
        //Converting 1D flat noiseMap into a 2Dimensionnal array for testing on unity TerrainData
@@ -111,9 +138,9 @@ public class HeightMapGenerator : MonoBehaviour
        // }
        // GenerateOthersHeigthmaps();
 
+       
        Color[] colorMap = new Color[chunkSize * chunkSize];
-        
-        //DetermineTerrainType(noiseMap,colorMap);
+       //DetermineTerrainType(noiseMap,colorMap);
         DetermineTerrainType2(noiseMap2, colorMap);
 
         if (applyErosion){ HydraulicErosion.Erode2(noiseMap2, chunkSize, erosionParameters); Debug.Log("applied erosion");}
@@ -135,6 +162,7 @@ public class HeightMapGenerator : MonoBehaviour
         {
             if(useHeightCurve)noiseMap2 = applyHeightCurveToMap(noiseMap2);
            // terrainData.SetHeights(0,0,mapForData);
+           //TextureGenerator.UpdateMeshMaterial(mapMaterial, minTerrainMinHeight, maxTerrainHeight, shaderColors, baseStartHeights);
             mapDisplay.DrawMesh(
                 MeshGenerator.GenerateMesh2(noiseMap2, chunkSize, noises[1].meshHeightMultiplier, levelOfDetail, heightCurve,
                     useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));

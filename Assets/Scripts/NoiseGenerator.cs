@@ -144,9 +144,33 @@ public static class NoiseGenerator
  
       return noiseMap;
    }
+
+ static void SetCorrectNoiseType(HeightMapGenerator.NoiseType noiseType)
+ {
+    if (noiseType == HeightMapGenerator.NoiseType.SIMPLEXNOISE)
+    {
+       //scale /= 60f;
+       noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+    }
+    else if (noiseType == HeightMapGenerator.NoiseType.PERLINNOISE)
+    {
+       noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+    }
+    else if (noiseType == HeightMapGenerator.NoiseType.CELLULARNOISE)
+    {
+       noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+    }
+    else if (noiseType == HeightMapGenerator.NoiseType.CUBICNOISE)
+    {
+       noise.SetNoiseType(FastNoiseLite.NoiseType.ValueCubic);
+    }
+    else if (noiseType == HeightMapGenerator.NoiseType.VALUENOISE)
+    {
+       noise.SetNoiseType(FastNoiseLite.NoiseType.Value);
+    }
+ }
  
- 
- public static float[] GenerateNoiseMap2(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges)
+ public static float[] GenerateNoiseMap2(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges, Noise [] noises)
  {
     mapWidth_ = mapWidth;
     mapHeight_ = mapHeight;
@@ -168,27 +192,27 @@ public static class NoiseGenerator
       // Create and configure FastNoise object
       // Currently reducing the scale because of the apparent huge difference in size between
       // the unity perlin noise and Fastnoiselite opensimplexnoise
-      if (noiseType == HeightMapGenerator.NoiseType.SIMPLEXNOISE)
-      {
-         //scale /= 60f;
-         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-      }
-      else if (noiseType == HeightMapGenerator.NoiseType.PERLINNOISE)
-      {
-         noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-      }
-      else if (noiseType == HeightMapGenerator.NoiseType.CELLULARNOISE)
-      {
-         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-      }
-      else if (noiseType == HeightMapGenerator.NoiseType.CUBICNOISE)
-      {
-         noise.SetNoiseType(FastNoiseLite.NoiseType.ValueCubic);
-      }
-      else if (noiseType == HeightMapGenerator.NoiseType.VALUENOISE)
-      {
-         noise.SetNoiseType(FastNoiseLite.NoiseType.Value);
-      }
+      // if (noiseType == HeightMapGenerator.NoiseType.SIMPLEXNOISE)
+      // {
+      //    //scale /= 60f;
+      //    noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+      // }
+      // else if (noiseType == HeightMapGenerator.NoiseType.PERLINNOISE)
+      // {
+      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+      // }
+      // else if (noiseType == HeightMapGenerator.NoiseType.CELLULARNOISE)
+      // {
+      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+      // }
+      // else if (noiseType == HeightMapGenerator.NoiseType.CUBICNOISE)
+      // {
+      //    noise.SetNoiseType(FastNoiseLite.NoiseType.ValueCubic);
+      // }
+      // else if (noiseType == HeightMapGenerator.NoiseType.VALUENOISE)
+      // {
+      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Value);
+      // }
       
       if (scale <= 0) {
          scale = 0.0001f;
@@ -232,7 +256,11 @@ public static class NoiseGenerator
                    // float sampleY = (y-halfHeight) * 1.2f + octaveOffsets[i].y;
                    Vector2 point = new Vector2(sampleX, sampleY);
                    // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+
+                   HeightMapGenerator.NoiseType thisNoiseType = noises[i+1].noiseType;
+                   SetCorrectNoiseType(thisNoiseType);
                    noiseValue = noise.GetNoise(point.x, point.y);
+                   //noiseValue = noise.GetNoise(point.x, point.y);
                 
                    if (applyRidges)
                    {
@@ -254,7 +282,6 @@ public static class NoiseGenerator
                 } else if (noiseHeight < minNoiseHeight) {
                    minNoiseHeight = noiseHeight;
                 }
-                //noiseMap [x, y] = noiseHeight;
                 noiseMap2[y * mapHeight + x] = noiseHeight;
 
                 // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));
