@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TerrainData : MonoBehaviour
+public class TerrainDatas : MonoBehaviour
 {
    
     public TerrainType[] mapRegions;

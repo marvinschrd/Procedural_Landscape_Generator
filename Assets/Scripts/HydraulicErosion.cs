@@ -15,7 +15,7 @@ public static class HydraulicErosion
     
     
      // Initialization creates a System.Random object and precomputes indices and weights of erosion brush
-   static void Initialize (int mapSize, bool resetSeed, Erosion erosionParameters) {
+   static void Initialize(int mapSize, Erosion erosionParameters, bool resetSeed = false) {
         if (resetSeed || prng == null || currentSeed != erosionParameters.seed) {
             prng = new System.Random (erosionParameters.seed);
             currentSeed = erosionParameters.seed;
@@ -29,7 +29,7 @@ public static class HydraulicErosion
     }
 
     public static void Erode2 (float[] map, int mapSize, Erosion erosionParameters, bool resetSeed = false) {
-        Initialize (mapSize, resetSeed, erosionParameters);
+        Initialize (mapSize, erosionParameters, resetSeed);
 
         for (int iteration = 0; iteration < erosionParameters.dropletNumber; iteration++) {
             // Create water droplet at random point on map

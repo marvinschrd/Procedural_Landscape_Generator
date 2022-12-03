@@ -61,8 +61,6 @@ public static class MeshGenerator
    
     public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve, Erosion erosionParameters, bool applyErosion)
    {
-      // int width = terrainHeightMap.GetLength(0);
-      // int height = terrainHeightMap.GetLength(1);
       int width = chunkSize-1;
       int height = chunkSize-1;
       
@@ -78,7 +76,7 @@ public static class MeshGenerator
       MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
       int vertexIndex = 0;
       
-      if (applyErosion){ HydraulicErosion.Erode2(terrainHeightMap, chunkSize, erosionParameters); Debug.Log("applied erosion");}
+      // if (applyErosion){ HydraulicErosion.Erode2(terrainHeightMap, chunkSize, erosionParameters); Debug.Log("applied erosion");}
 
       for (int y = 0; y < height; y+= meshLevelOfDetailIncrement)
       {
@@ -86,15 +84,11 @@ public static class MeshGenerator
          {
             // give the terrain height map value for the y vertice to get height. X and Z values are centered using topleft
             // Y value is multiplied with height multiplier in order to get actual height variation
-            if (useCurve)
-            {
-               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeightMap[y * chunkSize + x])* heightMultiplier,topLeftz - y);
-            }
-            else
-            {
-               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeightMap[y * chunkSize + x]* heightMultiplier,topLeftz - y);
-            }
-
+           
+            
+              //meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeightMap[y * chunkSize + x])* heightMultiplier,topLeftz - y);
+              meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeightMap[y * chunkSize + x] * heightMultiplier,topLeftz - y);
+              
             meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
 
             // Check to ignore triangles when on the edge of the map

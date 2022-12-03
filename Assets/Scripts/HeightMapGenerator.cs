@@ -3,12 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = System.Random;
 
 public class HeightMapGenerator : MonoBehaviour
 {
    // private const int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
      [SerializeField] int chunkSize = 241; // 241 because of unity limitiation of 255 and because of possible use in LOD implementation
+     // [SerializeField] private TerrainData terrainData;
+     
 
     [Range(0,6)]
     [SerializeField] private int levelOfDetail = 0;
@@ -66,16 +69,38 @@ public class HeightMapGenerator : MonoBehaviour
     {
         noises[1].seed = UnityEngine.Random.Range(0, 1000000);
     }
+    float[] applyHeightCurveToMap(float[] noiseMap)
+    {
+        for (int y = 0; y < chunkSize; ++y)
+        {
+            for (int x = 0; x < chunkSize; ++x)
+            {
+                noiseMap[y * chunkSize + x] = heightCurve.Evaluate(noiseMap[y * chunkSize + x]);
+            }
+        }
+        return noiseMap;
+    }
 
     public void GenerateMap()
     {
-        //float[] noiseMap2 = new float [chunkSize * chunkSize];
-        //heightCurve.MoveKey(1, new Keyframe(0.9f, 0.1f));
-       // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
-       
+        // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
+       // float[,] noiseMap1 = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
+       //     noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
+       //     applyRidges);
        float[] noiseMap2 = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
            noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
            applyRidges);
+
+
+       //Converting 1D flat noiseMap into a 2Dimensionnal array for testing on unity TerrainData
+       // float[,] mapForData = new float[chunkSize,chunkSize];
+       // for (int y = 0; y < chunkSize; ++y)
+       // {
+       //     for (int x = 0; x < chunkSize; ++x)
+       //     {
+       //         mapForData[x, y] = noiseMap2[y * chunkSize + x];
+       //     }
+       // }
        
        // Not used now because only one noise map is being created
        // if (noises.Length > 2)
@@ -90,12 +115,15 @@ public class HeightMapGenerator : MonoBehaviour
         
         //DetermineTerrainType(noiseMap,colorMap);
         DetermineTerrainType2(noiseMap2, colorMap);
-        
+
+        if (applyErosion){ HydraulicErosion.Erode2(noiseMap2, chunkSize, erosionParameters); Debug.Log("applied erosion");}
+
+
         MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
 
         if (drawMode == MapDrawMode.NOISEMAP)
         {
-            Texture2D texture = TextureGenerator.TextureFromHeightMap2(noiseMap2);
+            Texture2D texture = TextureGenerator.TextureFromHeightMap2(noiseMap2, chunkSize);
             mapDisplay.DrawTexture(texture);
         }
         else if (drawMode == MapDrawMode.COLORMAP)
@@ -105,6 +133,8 @@ public class HeightMapGenerator : MonoBehaviour
         }
         else if (drawMode == MapDrawMode.MESH)
         {
+            if(useHeightCurve)noiseMap2 = applyHeightCurveToMap(noiseMap2);
+           // terrainData.SetHeights(0,0,mapForData);
             mapDisplay.DrawMesh(
                 MeshGenerator.GenerateMesh2(noiseMap2, chunkSize, noises[1].meshHeightMultiplier, levelOfDetail, heightCurve,
                     useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));

@@ -43,21 +43,20 @@ public static class TextureGenerator
       return TextureFromColorMap(colorMap, witdh, heigth);
    }
    // For [] heightMap
-   public static Texture2D TextureFromHeightMap2(float [] heightMap)
+   public static Texture2D TextureFromHeightMap2(float [] heightMap, int chunkSize)
    {
-      // int witdh = heightMap.GetLength(0);
-      // int heigth = heightMap.GetLength(1);
+      
 
-      Color[] colorMap = new Color[241 * 241];
+      Color[] colorMap = new Color[chunkSize * chunkSize];
 
-      for (int y = 0; y < 241; ++y)
+      for (int y = 0; y < chunkSize; ++y)
       {
-         for (int x = 0; x < 241; ++x)
+         for (int x = 0; x < chunkSize; ++x)
          {
-            colorMap[241 * y + x] = Color.Lerp(Color.black, Color.white, heightMap[241 * y + x]);
+            colorMap[chunkSize * y + x] = Color.Lerp(Color.black, Color.white, heightMap[chunkSize * y + x]);
          }
       }
 
-      return TextureFromColorMap(colorMap, 241, 241);
+      return TextureFromColorMap(colorMap, chunkSize, chunkSize);
    }
 }
