@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MeshMaterial
-  m_Shader: {fileID: 4800000, guid: 875748ea41cd7784b9035736ad590ab2, type: 3}
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_ValidKeywords: []
   m_InvalidKeywords:
   - _WINDQUALITY_NONE
@@ -65,6 +65,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SpecGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _SubsurfaceTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -83,10 +87,10 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
-    - _Glossiness: 0.215
+    - _Glossiness: 0
     - _GlossyReflections: 1
     - _HueVariationKwToggle: 0
-    - _Metallic: 0.722
+    - _Metallic: 0
     - _Mode: 0
     - _NormalMapKwToggle: 0
     - _OcclusionStrength: 1
