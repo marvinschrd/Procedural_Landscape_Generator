@@ -1,8 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
-public class NoiseLayer
+[System.Serializable] public class NoiseLayer
 {
-    public float[] heightmap;
+    public NoiseSettings noiseSettings;
+    private float[] heightmap_;
+    [Range(0f,1f)]
+    [SerializeField] public float minValue;
+
+    public void SetHeightmap(float[] heightmap)
+    {
+        heightmap_ = heightmap;
+    }
+
+    public float[] GetHeightmap()
+    {
+        return heightmap_;
+    }
 }

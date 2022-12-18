@@ -16,7 +16,8 @@ public class HeightMapGenerator : MonoBehaviour
     [Range(0,6)]
     [SerializeField] private int levelOfDetail = 0;
 
-    [SerializeField] private NoiseSettings[] noisesSettings;
+    //[SerializeField] private NoiseSettings[] noisesSettings;
+    [SerializeField]
     private NoiseLayer[] noiseLayers;
     private int octaves = 0;
 
@@ -34,7 +35,15 @@ public class HeightMapGenerator : MonoBehaviour
     [SerializeField] private bool applyErosion = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
 
+    private float[] finalMap_;
+    [SerializeField]
+    private int seed_;
 
+    [SerializeField] private int meshMultiplier_;
+
+    private float maxNoiseHeight_;
+    private float minNoiseHeight_;
+    
     //Shader tests not working
     // [SerializeField] private Material mapMaterial;
     // [SerializeField] private Color[] shaderColors;
@@ -91,20 +100,72 @@ public class HeightMapGenerator : MonoBehaviour
     // Each noise settings will be used to create one heightmap/noise layer corresponding to the settings values.
     public void GenerateNoiseLayers()
     {
-        noiseLayers = new NoiseLayer[noisesSettings.Length - 1];
-        for (int i = 0; i < noiseLayers.Length; ++i)
+         //Generate all the heightmaps based their settings
+         for (int i = 1; i < noiseLayers.Length; ++i)
+        { 
+            noiseLayers[i].noiseSettings.seed = seed_;
+            noiseLayers[i].SetHeightmap(NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noiseLayers[i].noiseSettings));
+          
+        }
+    }
+
+    public void GenerateFinalMap()
+    {
+        // Debug.Log("generated");
+        // finalMap_ = new float[chunkSize * chunkSize];
+        // //Loop for each cell of the final map
+        // for (int y = 0; y < chunkSize; ++y)
+        // {
+        //     for (int x = 0; x < chunkSize; ++x)
+        //     {
+        //         float elevation = 0;
+        //         // Now loop trough all the heightmaps
+        //         for (int i = 1; i < noiseLayers.Length; ++i)
+        //         {
+        //             // Add the elevation of all the heighmaps into the final elevation value at that position
+        //             elevation += noiseLayers[i].GetHeightmap()[y * chunkSize + x];
+        //         }
+        //         // Put the final elevation in the finalMap cell
+        //        
+        //         if (elevation > maxNoiseHeight_) {
+        //             maxNoiseHeight_ = elevation;
+        //         } else if (elevation < minNoiseHeight_) {
+        //             minNoiseHeight_ = elevation;
+        //         }
+        //        // elevation = Mathf.Max(0, elevation - noiseLayers[i].minValue);
+        //         finalMap_[y * chunkSize + x] = elevation;
+        //     }
+        // }
+        
+        finalMap_ = new float[chunkSize * chunkSize];
+        for (int y = 0; y < chunkSize; ++y)
         {
-            noiseLayers[i].heightmap = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noisesSettings[i+1].seed,
-                noisesSettings[i+1].noiseScale, noisesSettings[i+1].octaves, noisesSettings[i+1].persistance,
-                noisesSettings[i+1].lacunarity, noisesSettings[i].offset, noisesSettings[i+1].noiseType,
-                noisesSettings[i+1].applyRidge, noisesSettings);
+            for (int x = 0; x < chunkSize; ++x)
+            {
+                float elevation = 0f;
+                for (int i = 1; i < noiseLayers.Length ; ++i)
+                {
+
+                    float value = noiseLayers[i].GetHeightmap()[y * chunkSize + x];
+                   elevation += value;
+                   
+                   if (elevation > maxNoiseHeight_) {
+                                   maxNoiseHeight_ = elevation;
+                   } else if (elevation < minNoiseHeight_) {
+                       minNoiseHeight_ = elevation;
+                   }
+                   
+                   elevation = Mathf.Max(0, elevation - noiseLayers[i].minValue);
+                   finalMap_[y * chunkSize + x] = elevation;
+                }
+            }
         }
     }
 
 
     public void RandomiseValues()
     {
-        noisesSettings[1].seed = UnityEngine.Random.Range(0, 1000000);
+        seed_ = UnityEngine.Random.Range(0, 1000000);
     }
     float[] applyHeightCurveToMap(float[] noiseMap)
     {
@@ -117,39 +178,33 @@ public class HeightMapGenerator : MonoBehaviour
         }
         return noiseMap;
     }
-
     public void GenerateMap()
     {
-        //Generate all the heightmaps based on the noiseSettings array
-       // GenerateNoiseLayers();
-
-        octaves = noisesSettings.Length > 1 ? noisesSettings.Length - 1 : noisesSettings.Length;
-
-        // float[,] noiseMap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, seed, noiseScale ,octaves, persistance, lacunarity, offset, noiseType, applyRidges);
-        // float[,] noiseMap1 = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[1].seed, noises[1].noiseScale,
-        //     noises[1].octaves, noises[1].persistance, noises[1].lacunarity, noises[1].offset, noises[1].noiseType,
-        //     applyRidges);
+        maxNoiseHeight_ = float.MinValue;
+        minNoiseHeight_ = float.MaxValue;
         
+       GenerateNoiseLayers();
+       GenerateFinalMap();
+      
+       
+       
+       //This loop purpose is to get the values back to 0-1
+       if (maxNoiseHeight_ != minNoiseHeight_)
+       {
+           for (int i = 0; i < finalMap_.Length; ++i)
+           {
+               finalMap_[i] = (finalMap_[i] - minNoiseHeight_) / (maxNoiseHeight_ - minNoiseHeight_);
+           }
+       }
 
-        //float finalHeightmap [] = new float[chunksize * chunksize];
-        //   
-        //     for(int y = 0; y < chunksize; ++y)
-        //      {
-        //         for(int x = 0; x < chunksize; ++x)
-        //           {
-        //             float elevation = 0;
-        //               for(int i = 0; i < heightmaps.length; ++i)
-        //                  {
-        //                      elevation+= heightmaps[i][y * chunksize + x];
-        //                  }
-        //              finalHeightmap[y * chunksize + x] = elevation;
-        //           }
-        //      }
-        // 
-       float[] noiseMap2 = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noisesSettings[1].seed, noisesSettings[1].noiseScale,
-           octaves, noisesSettings[1].persistance, noisesSettings[1].lacunarity, noisesSettings[1].offset, noisesSettings[1].noiseType,
-           applyRidges, noisesSettings);
+       // octaves = noisesSettings.Length > 1 ? noisesSettings.Length - 1 : noisesSettings.Length;
 
+       //---------------------------------------------------------------------------------------
+        //Without multiple heightmaps
+       // float[] noiseMap2 = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noisesSettings[1].seed, noisesSettings[1].noiseScale,
+       //     noisesSettings[1].octaves, noisesSettings[1].persistance, noisesSettings[1].lacunarity, noisesSettings[1].offset, noisesSettings[1].noiseType,
+       //     applyRidges, noisesSettings);
+       //-----------------------------------------------------------------------------------------
 
        //Converting 1D flat noiseMap into a 2Dimensionnal array for testing on unity TerrainData
        // float[,] mapForData = new float[chunkSize,chunkSize];
@@ -164,16 +219,16 @@ public class HeightMapGenerator : MonoBehaviour
 
        Color[] colorMap = new Color[chunkSize * chunkSize];
        //DetermineTerrainType(noiseMap,colorMap);
-        DetermineTerrainType2(noiseMap2, colorMap);
+        DetermineTerrainType2(finalMap_, colorMap);
 
-        if (applyErosion){ HydraulicErosion.Erode2(noiseMap2, chunkSize, erosionParameters); Debug.Log("applied erosion");}
+        if (applyErosion){ HydraulicErosion.Erode2(finalMap_, chunkSize, erosionParameters); Debug.Log("applied erosion");}
 
 
         MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
 
         if (drawMode == MapDrawMode.NOISEMAP)
         {
-            Texture2D texture = TextureGenerator.TextureFromHeightMap2(noiseMap2, chunkSize);
+            Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
             mapDisplay.DrawTexture(texture);
         }
         else if (drawMode == MapDrawMode.COLORMAP)
@@ -183,11 +238,12 @@ public class HeightMapGenerator : MonoBehaviour
         }
         else if (drawMode == MapDrawMode.MESH)
         {
-            if(useHeightCurve)noiseMap2 = applyHeightCurveToMap(noiseMap2);
+            if(useHeightCurve)finalMap_ = applyHeightCurveToMap(finalMap_);
+            Debug.Log("draw mesh");
            // terrainData.SetHeights(0,0,mapForData);
            //TextureGenerator.UpdateMeshMaterial(mapMaterial, minTerrainMinHeight, maxTerrainHeight, shaderColors, baseStartHeights);
             mapDisplay.DrawMesh(
-                MeshGenerator.GenerateMesh2(noiseMap2, chunkSize, noisesSettings[1].meshHeightMultiplier, levelOfDetail, heightCurve,
+                MeshGenerator.GenerateMesh2(finalMap_, chunkSize, meshMultiplier_, levelOfDetail, heightCurve,
                     useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
         }
         else if (drawMode == MapDrawMode.FALLOFMAP)
@@ -207,34 +263,6 @@ public class HeightMapGenerator : MonoBehaviour
         fallOffMap = FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve);
     }
 
-
-    // private void DetermineTerrainType(float [,] noiseMap, Color [] colorMap)
-    // {
-    //     for (int y = 0; y < chunkSize; y++)
-    //     {
-    //         for (int x = 0; x < chunkSize; x++)
-    //         {
-    //             // Using the falloff map
-    //             if (useFallOffMap)
-    //             {
-    //                 noiseMap[x, y] = Mathf.Clamp01(noiseMap[x, y] - fallOffMap[x, y]) ;
-    //             }
-    //
-    //             // maybe try to make the warping here, on the already generated noisemap/texture;
-    //
-    //             float currentHeight = noiseMap[x, y];
-    //             for (int i = 0; i < mapRegions.Length; i++)
-    //             {
-    //                 if (currentHeight <= mapRegions[i].height)
-    //                 {
-    //                     colorMap[y * chunkSize + x] = mapRegions[i].terrainColor;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    
     private void DetermineTerrainType2(float [] noiseMap, Color [] colorMap)
     {
         for (int y = 0; y < chunkSize; y++)
@@ -261,24 +289,7 @@ public class HeightMapGenerator : MonoBehaviour
             }
         }
     }
-
-    // would be used if more than 1 heightmap (noise) would be generated and used
-    // public void GenerateOthersHeigthmaps()
-    // {
-    //     // 2 because 0 is empty (editor problems) and 1 is already the base heightmap for the terrain
-    //     if (noises.Length > 2)
-    //     {
-    //         for (int i = 2; i < noises.Length; ++i)
-    //         {
-    //             float[,] heightmap = NoiseGenerator.GenerateNoiseMap(chunkSize, chunkSize, noises[i].seed,
-    //                 noises[i].noiseScale, noises[i].octaves, noises[i].persistance, noises[i].lacunarity,
-    //                 noises[i].offset, noises[i].noiseType, applyRidges);
-    //             heightmaps.Add(heightmap);
-    //         }
-    //     }
-    // }
     
-
     private void Awake()
     {
         fallOffMap = FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve);

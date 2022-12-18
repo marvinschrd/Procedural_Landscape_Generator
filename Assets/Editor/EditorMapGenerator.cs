@@ -10,27 +10,27 @@ public class EditorMapGenerator : Editor
 {
     public override void OnInspectorGUI()
     {
-        HeightMapGenerator mapGenerator = (HeightMapGenerator)target;
-
+        HeightMapGenerator mapGenerator2 = (HeightMapGenerator)target;
         // allow for auto update if auto update is selected and value are changed
         if (DrawDefaultInspector())
         {
-            if (mapGenerator.autoUpdateMap)
+            //Debug.Log(mapGenerator2);
+            if (mapGenerator2.autoUpdateMap)
             {
-                mapGenerator.GenerateMap();
+                mapGenerator2.GenerateMap();
             }
         }
 
         // Update map on button press
         if (GUILayout.Button("Generate display of map"))
         {
-            mapGenerator.GenerateMap();
+            mapGenerator2.GenerateMap();
         }
 
         if (GUILayout.Button("Generate random seed map"))
         {
-            mapGenerator.RandomiseValues();
-            mapGenerator.GenerateMap();
+            mapGenerator2.RandomiseValues();
+            mapGenerator2.GenerateMap();
         }
     }
 }
