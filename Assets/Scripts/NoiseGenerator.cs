@@ -292,7 +292,7 @@ public static class NoiseGenerator
                 }
 
                 //Used to make the heightmap able to lower into the original plane as min value grow
-                // noiseHeight = Mathf.Max(0, noiseHeight - settings.minValue);
+               // noiseHeight = Mathf.Max(0, noiseHeight - settings.minValue);
                 noiseMap2[y * mapHeight + x] = noiseHeight;
 
                 // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));

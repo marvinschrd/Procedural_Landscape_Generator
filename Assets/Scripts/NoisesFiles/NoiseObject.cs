@@ -18,7 +18,9 @@ public class NoiseSettings
     [Range(0,1)]
     [SerializeField] public float persistance = 0.5f;
     [SerializeField] public float lacunarity = 2f;
-    // [Range(0,10)]
+
+    [SerializeField] public float strength = 1f;
+    [Range(0,1)]
     [SerializeField] public float minValue;
 
     [SerializeField] public int seed;

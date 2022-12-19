@@ -111,55 +111,59 @@ public class HeightMapGenerator : MonoBehaviour
 
     public void GenerateFinalMap()
     {
-        // Debug.Log("generated");
-        // finalMap_ = new float[chunkSize * chunkSize];
-        // //Loop for each cell of the final map
+        finalMap_ = new float[chunkSize * chunkSize];
         // for (int y = 0; y < chunkSize; ++y)
         // {
         //     for (int x = 0; x < chunkSize; ++x)
         //     {
-        //         float elevation = 0;
-        //         // Now loop trough all the heightmaps
-        //         for (int i = 1; i < noiseLayers.Length; ++i)
+        //         float elevation = 0f;
+        //         for (int i = 1; i < noiseLayers.Length ; ++i)
         //         {
-        //             // Add the elevation of all the heighmaps into the final elevation value at that position
-        //             elevation += noiseLayers[i].GetHeightmap()[y * chunkSize + x];
+        //             float value = 0;
+        //             if (noiseLayers[i].enable)
+        //             { 
+        //                 value = noiseLayers[i].GetHeightmap()[y * chunkSize + x];
+        //                 elevation += value;
+        //             }
+        //            
+        //            if (elevation > maxNoiseHeight_) {
+        //                            maxNoiseHeight_ = elevation;
+        //            } else if (elevation < minNoiseHeight_) {
+        //                minNoiseHeight_ = elevation;
+        //            }
         //         }
-        //         // Put the final elevation in the finalMap cell
-        //        
-        //         if (elevation > maxNoiseHeight_) {
-        //             maxNoiseHeight_ = elevation;
-        //         } else if (elevation < minNoiseHeight_) {
-        //             minNoiseHeight_ = elevation;
-        //         }
-        //        // elevation = Mathf.Max(0, elevation - noiseLayers[i].minValue);
+        //        // elevation = Mathf.Max(0, elevation - noiseLayers[2].minValue);
         //         finalMap_[y * chunkSize + x] = elevation;
+        //         // finalMap_[y * chunkSize + x] = elevation;
         //     }
         // }
         
-        finalMap_ = new float[chunkSize * chunkSize];
-        for (int y = 0; y < chunkSize; ++y)
+        //New test // NEED TO BE FULLY TESTED WITH MIN VALUE ETC... and test to not override value with each layer
+        for (int i = 1; i < noiseLayers.Length; ++i)
         {
-            for (int x = 0; x < chunkSize; ++x)
+            float elevation = 0f;
+            for (int y = 0; y < chunkSize; ++y)
             {
-                float elevation = 0f;
-                for (int i = 1; i < noiseLayers.Length ; ++i)
+                for (int x = 0; x < chunkSize; ++x)
                 {
-
-                    float value = noiseLayers[i].GetHeightmap()[y * chunkSize + x];
-                   elevation += value;
-                   
-                   if (elevation > maxNoiseHeight_) {
-                                   maxNoiseHeight_ = elevation;
-                   } else if (elevation < minNoiseHeight_) {
-                       minNoiseHeight_ = elevation;
-                   }
-                   
-                   elevation = Mathf.Max(0, elevation - noiseLayers[i].minValue);
-                   finalMap_[y * chunkSize + x] = elevation;
+                    float value = 0f;
+                    if (noiseLayers[i].enable)
+                    { 
+                        value = noiseLayers[i].GetHeightmap()[y * chunkSize + x];
+                    }
+                    if (value > maxNoiseHeight_) 
+                    {
+                        maxNoiseHeight_ = value;
+                    } else if (value < minNoiseHeight_) {
+                        minNoiseHeight_ = value;
+                    }
+                   // Debug.Log(value);
+                   value = Mathf.Max(0, value - noiseLayers[i].minValue);
+                   finalMap_[y * chunkSize + x] += value;
                 }
             }
         }
+
     }
 
 
@@ -196,7 +200,7 @@ public class HeightMapGenerator : MonoBehaviour
                finalMap_[i] = (finalMap_[i] - minNoiseHeight_) / (maxNoiseHeight_ - minNoiseHeight_);
            }
        }
-
+       
        // octaves = noisesSettings.Length > 1 ? noisesSettings.Length - 1 : noisesSettings.Length;
 
        //---------------------------------------------------------------------------------------
@@ -239,8 +243,7 @@ public class HeightMapGenerator : MonoBehaviour
         else if (drawMode == MapDrawMode.MESH)
         {
             if(useHeightCurve)finalMap_ = applyHeightCurveToMap(finalMap_);
-            Debug.Log("draw mesh");
-           // terrainData.SetHeights(0,0,mapForData);
+            // terrainData.SetHeights(0,0,mapForData);
            //TextureGenerator.UpdateMeshMaterial(mapMaterial, minTerrainMinHeight, maxTerrainHeight, shaderColors, baseStartHeights);
             mapDisplay.DrawMesh(
                 MeshGenerator.GenerateMesh2(finalMap_, chunkSize, meshMultiplier_, levelOfDetail, heightCurve,
