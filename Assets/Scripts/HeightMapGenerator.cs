@@ -159,7 +159,7 @@ public class HeightMapGenerator : MonoBehaviour
                     }
                    // Debug.Log(value);
                    value = Mathf.Max(0, value - noiseLayers[i].minValue);
-                   finalMap_[y * chunkSize + x] += value;
+                   finalMap_[y * chunkSize + x] += value * noiseLayers[i].strength;
                 }
             }
         }
@@ -225,7 +225,7 @@ public class HeightMapGenerator : MonoBehaviour
        //DetermineTerrainType(noiseMap,colorMap);
         DetermineTerrainType2(finalMap_, colorMap);
 
-        if (applyErosion){ HydraulicErosion.Erode2(finalMap_, chunkSize, erosionParameters); Debug.Log("applied erosion");}
+        if (applyErosion){ HydraulicErosion.Erode2(finalMap_, chunkSize, erosionParameters);}
 
 
         MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();

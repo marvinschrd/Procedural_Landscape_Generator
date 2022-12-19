@@ -21,6 +21,15 @@ public static class NoiseGenerator
  
  static float maxNoiseHeight_ = float.MinValue;
  static float minNoiseHeight_ = float.MaxValue;
+
+ public enum NoiseEffect
+ {
+    RIDGED,
+    SHARP_RIDGED,
+    BILLOW,
+    NOEFFECT
+ }
+ 
  // public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges)
  // {
  //    mapWidth_ = mapWidth;
@@ -242,6 +251,7 @@ public static class NoiseGenerator
             float amplitude = 1;
             float frequency = 1;
             float noiseHeight = 0;
+            float weight = 1;
             
             // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
             // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
@@ -268,19 +278,47 @@ public static class NoiseGenerator
                    noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets[i].x , point.y * frequency + octaveOffsets[i].y);
                    
                    //noiseValue = noise.GetNoise(point.x, point.y);
-                
-                   if (settings.applyRidge)
+
+                   //Apply a specific effect to this noise map
+                   switch (settings.noiseEffect)
                    {
-                      float n = Mathf.Abs(noiseValue) * amplitude;
-                      n = 1f - n;
-                      noiseHeight += n * n;
+                      // Billow noise will create round hills and shapes on the noise
+                      case NoiseEffect.BILLOW :
+                      {
+                         float n = Mathf.Abs(noiseValue) * amplitude;
+                         noiseHeight += n;
+                      }
+                         break;
+                      // Ridged noise will create sharp ridge, mountains peaks
+                      case NoiseEffect.RIDGED:
+                      {
+                         // Take the opposite of the billow noise to create the ridges instead of hills
+                         float n = Mathf.Abs(noiseValue) * amplitude;
+                         n = 1f - n;
+                         // n *= weight;
+                         // weight = n;
+                         noiseHeight += n;
+                      }
+                         break;
+                      case NoiseEffect.SHARP_RIDGED:
+                      {
+                         // Take the opposite of the billow noise to create the ridges instead of hills
+                         float n = Mathf.Abs(noiseValue) * amplitude;
+                         n = 1f - n;
+                         // Power of 3 to have even sharper ridges
+                         n *= n * n;
+                         // n *= weight;
+                         // weight = n;
+                         noiseHeight += n;
+                      }
+                         break;
+                      case NoiseEffect.NOEFFECT:
+                      {
+                         noiseHeight += noiseValue * amplitude; //strength
+                      }
+                         break;
                    }
-                   else
-                   {
-                      
-                      noiseHeight += noiseValue * amplitude; //strength
-                   }
-                
+
                    amplitude *= settings.persistance; //strength
                    frequency *= settings.lacunarity; //roughness
                 }
