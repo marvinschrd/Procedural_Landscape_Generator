@@ -12,7 +12,6 @@ public static class TextureGenerator
       texture.wrapMode = TextureWrapMode.Clamp;
       texture.SetPixels(colorMap);
       texture.Apply();
-      Debug.Log(texture.format);
       return texture;
    }
    
@@ -62,16 +61,16 @@ public static class TextureGenerator
    }
    
    
-   // Used to pass minHeight and maxHeight to the terrain shader
-   public static void UpdateMeshMaterial(Material meshMaterial, float terrainMinHeight, float terrainMaxHeight, Color [] shaderColors, float [] baseStartHeights)
-   {
-      meshMaterial.SetInt("baseColorCount", shaderColors.Length);
-      meshMaterial.SetFloatArray("baseStartHeights", baseStartHeights);
-      meshMaterial.SetColorArray("shaderColors", shaderColors);
-      
-      Debug.Log(terrainMinHeight);
-      Debug.Log(terrainMaxHeight);
-      meshMaterial.SetFloat("terrainMinHeight", terrainMinHeight);
-      meshMaterial.SetFloat("terrainMaxHeight", terrainMaxHeight);
-   }
+   // // Used to pass minHeight and maxHeight to the terrain shader
+   // public static void UpdateMeshMaterial(Material meshMaterial, float terrainMinHeight, float terrainMaxHeight, Color [] shaderColors, float [] baseStartHeights)
+   // {
+   //    meshMaterial.SetInt("baseColorCount", shaderColors.Length);
+   //    meshMaterial.SetFloatArray("baseStartHeights", baseStartHeights);
+   //    meshMaterial.SetColorArray("shaderColors", shaderColors);
+   //    
+   //    Debug.Log(terrainMinHeight);
+   //    Debug.Log(terrainMaxHeight);
+   //    meshMaterial.SetFloat("terrainMinHeight", terrainMinHeight);
+   //    meshMaterial.SetFloat("terrainMaxHeight", terrainMaxHeight);
+   // }
 }

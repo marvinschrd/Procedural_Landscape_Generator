@@ -297,4 +297,17 @@ public class HeightMapGenerator : MonoBehaviour
     {
         fallOffMap = FallOffGenerator.GenerateFallOffMap(chunkSize,falloffMapCurve);
     }
+
+
+    public void GenerateDomainWarpingMap()
+    {
+        finalMap_ = DomainWarpingGenerator.DomainWarping(chunkSize, chunkSize);
+        MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
+        if (drawMode == MapDrawMode.NOISEMAP)
+        {
+            Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
+            mapDisplay.DrawTexture(texture);
+        }
+    }
+    
 }

@@ -259,20 +259,112 @@ public static class NoiseGenerator
             //Vector2 point = new Vector2(x, y);
            
            
+                  float sampleX = (x - halfWidth) / scale_;
+                  float sampleY = (y - halfHeight) / scale_;
             
+                  Vector2 point = new Vector2(sampleX, sampleY);
                
-               //FBM starts here
-                for (int i = 0; i < settings.octaves; i++) {
-                   // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
-                   // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
+               // //FBM starts here
+               for (int i = 0; i < settings.octaves; i++) {
+                  // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
+                  // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
+               
+                  
+                  // float sampleX = (x-halfWidth) * fr + octaveOffsets[i].x;
+                  // float sampleY = (y-halfHeight) * 1.2f + octaveOffsets[i].y;
+                  // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+               
+                  //test some things here
+                  noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets[i].x , point.y * frequency + octaveOffsets[i].y);
+                  
+                  //noiseValue = noise.GetNoise(point.x, point.y);
+               
+                  //Apply a specific effect to this noise map
+                  switch (settings.noiseEffect)
+                  {
+                     // Billow noise will create round hills and shapes on the noise
+                     case NoiseEffect.BILLOW :
+                     {
+                        float n = Mathf.Abs(noiseValue) * amplitude;
+                        noiseHeight += n;
+                     }
+                        break;
+                     // Ridged noise will create sharp ridge, mountains peaks
+                     case NoiseEffect.RIDGED:
+                     {
+                        // Take the opposite of the billow noise to create the ridges instead of hills
+                        float n = Mathf.Abs(noiseValue) * amplitude;
+                        n = 1f - n;
+                        // n *= weight;
+                        // weight = n;
+                        noiseHeight += n;
+                     }
+                        break;
+                     case NoiseEffect.SHARP_RIDGED:
+                     {
+                        // Take the opposite of the billow noise to create the ridges instead of hills
+                        float n = Mathf.Abs(noiseValue) * amplitude;
+                        n = 1f - n;
+                        // Power of 3 to have even sharper ridges
+                        n *= n * n;
+                        // n *= weight;
+                        // weight = n;
+                        noiseHeight += n;
+                     }
+                        break;
+                     case NoiseEffect.NOEFFECT:
+                     {
+                        noiseHeight += noiseValue * amplitude; //strength
+                     }
+                        break;
+                  }
+               
+                  amplitude *= settings.persistance; //strength/gain
+                  frequency *= settings.lacunarity; //roughness
+               }
+               
+               
+             
+               
+               
+               
+                
+                if (noiseHeight > maxNoiseHeight) {
+                   maxNoiseHeight = noiseHeight;
+                } else if (noiseHeight < minNoiseHeight) {
+                   minNoiseHeight = noiseHeight;
+                }
 
-                   float sampleX = (x - halfWidth) / scale_;
-                   float sampleY = (y - halfHeight) / scale_;
-                   
-                   // float sampleX = (x-halfWidth) * fr + octaveOffsets[i].x;
-                   // float sampleY = (y-halfHeight) * 1.2f + octaveOffsets[i].y;
-                   Vector2 point = new Vector2(sampleX, sampleY);
-                   // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
+                //Used to make the heightmap able to lower into the original plane as min value grow
+               // noiseHeight = Mathf.Max(0, noiseHeight - settings.minValue);
+                noiseMap2[y * mapHeight + x] = noiseHeight;
+
+                // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));
+
+
+         }
+      }
+      //This loop purpose is to get the values back to 0-1
+      if (maxNoiseHeight != minNoiseHeight)
+      {
+         for (int i = 0; i < noiseMap2.Length; ++i)
+         {
+            noiseMap2[i] = (noiseMap2[i] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
+         }
+      }
+      return noiseMap2;
+   }
+
+ // static float Pattern(Vector2 point)
+ // {
+ //    Vector2 q = new Vector2(FBM(x,y), FBM(x,y));
+ // }
+ 
+ static float FBM(Vector2 point, int octaves, float lacunarity, float persistance, float halfWidth, float halfHeight, float noiseValue, float frequency, float amplitude, Vector2 [] octaveOffsets, NoiseEffect noiseEffect, float noiseHeight)
+ {
+    //FBM starts here
+                for (int i = 0; i < octaves; i++) {
+                  
 
                    //test some things here
                    noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets[i].x , point.y * frequency + octaveOffsets[i].y);
@@ -280,7 +372,7 @@ public static class NoiseGenerator
                    //noiseValue = noise.GetNoise(point.x, point.y);
 
                    //Apply a specific effect to this noise map
-                   switch (settings.noiseEffect)
+                   switch (noiseEffect)
                    {
                       // Billow noise will create round hills and shapes on the noise
                       case NoiseEffect.BILLOW :
@@ -319,37 +411,13 @@ public static class NoiseGenerator
                          break;
                    }
 
-                   amplitude *= settings.persistance; //strength
-                   frequency *= settings.lacunarity; //roughness
-                }
-                
-                if (noiseHeight > maxNoiseHeight) {
-                   maxNoiseHeight = noiseHeight;
-                } else if (noiseHeight < minNoiseHeight) {
-                   minNoiseHeight = noiseHeight;
+                   amplitude *= persistance; //strength/gain
+                   frequency *= lacunarity; //roughness
                 }
 
-                //Used to make the heightmap able to lower into the original plane as min value grow
-               // noiseHeight = Mathf.Max(0, noiseHeight - settings.minValue);
-                noiseMap2[y * mapHeight + x] = noiseHeight;
-
-                // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));
-
-
-         }
-      }
-      //This loop purpose is to get the values back to 0-1
-      if (maxNoiseHeight != minNoiseHeight)
-      {
-         for (int i = 0; i < noiseMap2.Length; ++i)
-         {
-            noiseMap2[i] = (noiseMap2[i] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
-         }
-      }
-      return noiseMap2;
-   }
+                return noiseHeight;
+ }
  
-
    // static float SimpleFBM(Vector2 point)
    // {
    //    float noiseSum = 0;

@@ -32,5 +32,10 @@ public class EditorMapGenerator : Editor
             mapGenerator2.RandomiseValues();
             mapGenerator2.GenerateMap();
         }
+        
+        if (GUILayout.Button("Generate domain warping map"))
+        {
+            mapGenerator2.GenerateDomainWarpingMap();
+        }
     }
 }
