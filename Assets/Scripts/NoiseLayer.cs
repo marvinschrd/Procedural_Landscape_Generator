@@ -10,6 +10,9 @@ using UnityEngine;
 
     [Range(0f, 1f)]
     [SerializeField] public float strength;
+
+    [SerializeField] public bool warpNoise = false;
+    [SerializeField] public float warpDisplacementFactor = 4.0f;
     [SerializeField] public bool enable = true;
 
     public void SetHeightmap(float[] heightmap)

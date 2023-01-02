@@ -305,7 +305,7 @@ public static class NoiseGenerator
                         // Take the opposite of the billow noise to create the ridges instead of hills
                         float n = Mathf.Abs(noiseValue) * amplitude;
                         n = 1f - n;
-                        // Power of 3 to have even sharper ridges
+                        // Power of 2 to have even sharper ridges
                         n *= n * n;
                         // n *= weight;
                         // weight = n;

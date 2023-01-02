@@ -44,28 +44,6 @@ public class HeightMapGenerator : MonoBehaviour
     private float maxNoiseHeight_;
     private float minNoiseHeight_;
     
-    //Shader tests not working
-    // [SerializeField] private Material mapMaterial;
-    // [SerializeField] private Color[] shaderColors;
-    // [Range(0,1)]
-    // [SerializeField] private float[] baseStartHeights;
-    // public float minTerrainMinHeight
-    // {
-    //     get
-    //     {
-    //         return noises[1].meshHeightMultiplier * heightCurve.Evaluate(0);
-    //     }
-    // }
-    // public float maxTerrainHeight
-    // {
-    //     get
-    //     {
-    //         return noises[1].meshHeightMultiplier * heightCurve.Evaluate(1);
-    //     }
-    // }
-    
-    
-
     public enum NoiseType
     {
         PERLINNOISE,
@@ -104,8 +82,8 @@ public class HeightMapGenerator : MonoBehaviour
          for (int i = 1; i < noiseLayers.Length; ++i)
         { 
             noiseLayers[i].noiseSettings.seed = seed_;
-            noiseLayers[i].SetHeightmap(NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noiseLayers[i].noiseSettings));
-          
+            //noiseLayers[i].SetHeightmap(NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noiseLayers[i].noiseSettings));
+          noiseLayers[i].SetHeightmap(DomainWarpingGenerator.DomainWarping(chunkSize,chunkSize, noiseLayers[i].noiseSettings, noiseLayers[i].warpDisplacementFactor));
         }
     }
 
@@ -248,6 +226,9 @@ public class HeightMapGenerator : MonoBehaviour
             mapDisplay.DrawMesh(
                 MeshGenerator.GenerateMesh2(finalMap_, chunkSize, meshMultiplier_, levelOfDetail, heightCurve,
                     useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
+            //Show noise map
+            Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
+            mapDisplay.DrawTexture(texture);
         }
         else if (drawMode == MapDrawMode.FALLOFMAP)
         {
@@ -301,13 +282,13 @@ public class HeightMapGenerator : MonoBehaviour
 
     public void GenerateDomainWarpingMap()
     {
-        finalMap_ = DomainWarpingGenerator.DomainWarping(chunkSize, chunkSize);
-        MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
-        if (drawMode == MapDrawMode.NOISEMAP)
-        {
-            Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
-            mapDisplay.DrawTexture(texture);
-        }
+        // finalMap_ = DomainWarpingGenerator.DomainWarping(chunkSize, chunkSize);
+        // MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
+        // if (drawMode == MapDrawMode.NOISEMAP)
+        // {
+        //     Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
+        //     mapDisplay.DrawTexture(texture);
+        // }
     }
     
 }

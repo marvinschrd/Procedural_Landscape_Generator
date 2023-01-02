@@ -6,58 +6,79 @@ using UnityEngine;
 public static class DomainWarpingGenerator
 {
    static FastNoiseLite noise = new FastNoiseLite();
-   private static int octaves = 4;
-   private static float persistance = 0.18f;
-   private static float lacunarity = 3.0f;
+   private static int octaves_ = 5;
+   private static float persistance_ = 0.18f;
+   private static float lacunarity_ = 3.0f;
 
-   private static float amplitude = 1.0f;
-   private static float frequency = 1.0f;
-   private static float noiseHeight = 0.0f;
+   private static float amplitude_ = 1.0f;
+   private static float frequency_ = 1.0f;
+   private static float noiseHeight_ = 0.0f;
    private static float H = 0.5f;
+   private static Vector2 [] octaveOffsets_;
 
-   private static float scale = 3;
+   private static float displacementFactor_ = 80.0f;
+
+   private static float scale_ = 3;
    // Use the seed to generate the same map regarding the given seed
-   static System.Random prng = new System.Random (1000);
-   
-   static public float[] DomainWarping(int width, int heigth)
+   static private int seed_ = 1000;
+
+   static public float[] DomainWarping(int width, int heigth, NoiseSettings noiseSettings, float displacementFactor)
    {
       float halfWidth = width *0.5f;
       float halfHeight = heigth *0.5f;
-      noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+      SetCorrectNoiseType(noiseSettings.noiseType);
       float[] map = new float[width * heigth];
       
       float maxNoiseHeight = float.MinValue;
       float minNoiseHeight = float.MaxValue;
       
+      //Set values
+      scale_ = noiseSettings.noiseScale <= 0 ? 0.1f : noiseSettings.noiseScale;
+      octaves_ = noiseSettings.octaves;
+      seed_ = noiseSettings.seed;
+      persistance_ = noiseSettings.persistance;
+      displacementFactor_ = displacementFactor;
+      System.Random prng = new System.Random (seed_);
+      
+      // Give an offset to each octave in order to sample them from random different locations
+      Vector2[] octaveOffsets = new Vector2[octaves_];
+      for (int i = 0; i < octaves_; ++i) {
+         float offsetX = prng.Next (-100000, 100000);
+         float offsetY = prng.Next (-100000, 100000);
+         octaveOffsets [i] = new Vector2 (offsetX, offsetY);
+      }
+      octaveOffsets_ = octaveOffsets;
+
+
       for (int y = 0; y < width; ++y)
       {
          for (int x = 0; x < heigth; ++x)
          {
-            noiseHeight = 0f;
+            noiseHeight_ = 0f;
 
-            Vector2 point = new Vector2((x - halfWidth )/ scale, (y - halfHeight) / scale);
-            noiseHeight = Pattern(point);
+            Vector2 point = new Vector2((x - halfWidth )/ scale_, (y - halfHeight) / scale_);
+            noiseHeight_ = Pattern(point);
             
             
-            if (noiseHeight > maxNoiseHeight) {
-               maxNoiseHeight = noiseHeight;
-            } else if (noiseHeight < minNoiseHeight) {
-               minNoiseHeight = noiseHeight;
+            if (noiseHeight_ > maxNoiseHeight) {
+               maxNoiseHeight = noiseHeight_;
+            } else if (noiseHeight_ < minNoiseHeight) {
+               minNoiseHeight = noiseHeight_;
             }
             
-            map[y * width + x] = noiseHeight;
+            map[y * width + x] = noiseHeight_;
 
          }
       }
 
       //This loop purpose is to get the values back to 0-1
-      // if (maxNoiseHeight != minNoiseHeight)
-      // {
-      //    for (int i = 0; i < map.Length; ++i)
-      //    {
-      //       map[i] = (map[i] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
-      //    }
-      // }
+      if (maxNoiseHeight != minNoiseHeight)
+      {
+         for (int i = 0; i < map.Length; ++i)
+         {
+            map[i] = (map[i] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
+         }
+      }
       
       return map;
    }
@@ -65,20 +86,20 @@ public static class DomainWarpingGenerator
    static float Pattern(Vector2 point)
    {
       //First Warping
-      Vector2 P1 = point + new Vector2(100, 200);
+      Vector2 P1 = point + new Vector2(10, 0f);
       Vector2 P2 = point + new Vector2(5.2f, 1.3f);
       Vector2 q = new Vector2(
          FBM(P1),
          FBM(P2)
       );
-      Vector2 q2 = point + 4.0f * q;
+      Vector2 q2 = point + displacementFactor_ * q;
 
       //Second Warping
-      Vector2 P3 = point + 4.0f * q + new Vector2(1.7f, 9.2f);
-      Vector2 P4 = point + 4.0f * q + new Vector2(8.3f, 2.8f);
+      Vector2 P3 = point + displacementFactor_ * q + new Vector2(1.7f, 9.2f);
+      Vector2 P4 = point + displacementFactor_ * q + new Vector2(8.3f, 2.8f);
       Vector2 r = new Vector2(FBM(P3), FBM(P4));
       
-      Vector2 r2 = point + 4.0f * r;
+      Vector2 r2 = point + displacementFactor_ * r;
       
       float noiseValue = FBM(r2);
       //Debug.Log(noiseValue);
@@ -87,22 +108,57 @@ public static class DomainWarpingGenerator
    
 static float FBM(Vector2 point )
 {
-   float G = Mathf.Pow(2, -H); // G = persitance;
-   //float G = 0.6f;
-   float f = 1.0f;
-   float a = 1.0f;
-   float t = 0f;
-   for (int i = 0; i <= octaves; ++i)
+  // float G = Mathf.Pow(2, -H); // G = persitance;
+  float G = persistance_;
+   float frequency = 1.0f;
+   float amplitude = 1.0f;
+   float height = 0f;
+   for (int i = 0; i < octaves_; ++i)
    {
-      float noiseValue = noise.GetNoise(point.x * f, point.y * f);
-      t += noiseValue * a;
-      //Debug.Log(t);
-      a *= G;
-      f *= 2.5f;
+      float noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets_[i].x, point.y * frequency + octaveOffsets_[i].y);
+       
+       //test billow noise
+       // float billow = Mathf.Abs(noiseValue) * amplitude;
+       // height += billow;
+       
+       //test ridged noise
+       // float ridged = Mathf.Abs(noiseValue) * amplitude;
+       // ridged = 1f - ridged;
+       // height += ridged;
+      height += noiseValue * amplitude;
+      amplitude *= G;
+      frequency *= 2.5f;
    }
 
-   return t;
+   return height;
 }
+
+static void SetCorrectNoiseType(HeightMapGenerator.NoiseType noiseType)
+{
+   if (noiseType == HeightMapGenerator.NoiseType.SIMPLEXNOISE)
+   {
+      //scale /= 60f;
+      noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+   }
+   else if (noiseType == HeightMapGenerator.NoiseType.PERLINNOISE)
+   {
+      noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+   }
+   else if (noiseType == HeightMapGenerator.NoiseType.CELLULARNOISE)
+   {
+      noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+   }
+   else if (noiseType == HeightMapGenerator.NoiseType.CUBICNOISE)
+   {
+      noise.SetNoiseType(FastNoiseLite.NoiseType.ValueCubic);
+   }
+   else if (noiseType == HeightMapGenerator.NoiseType.VALUENOISE)
+   {
+      noise.SetNoiseType(FastNoiseLite.NoiseType.Value);
+   }
+}
+
+
 }
 
 
