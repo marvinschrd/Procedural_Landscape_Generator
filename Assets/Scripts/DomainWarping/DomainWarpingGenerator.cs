@@ -17,6 +17,7 @@ public static class DomainWarpingGenerator
    private static Vector2 [] octaveOffsets_;
 
    private static float displacementFactor_ = 80.0f;
+   private static NoiseGenerator.NoiseEffect noiseEffect_;
 
    private static float scale_ = 3;
    // Use the seed to generate the same map regarding the given seed
@@ -38,13 +39,14 @@ public static class DomainWarpingGenerator
       seed_ = noiseSettings.seed;
       persistance_ = noiseSettings.persistance;
       displacementFactor_ = displacementFactor;
+      noiseEffect_ = noiseSettings.noiseEffect;
       System.Random prng = new System.Random (seed_);
       
       // Give an offset to each octave in order to sample them from random different locations
       Vector2[] octaveOffsets = new Vector2[octaves_];
       for (int i = 0; i < octaves_; ++i) {
-         float offsetX = prng.Next (-100000, 100000);
-         float offsetY = prng.Next (-100000, 100000);
+         float offsetX = prng.Next (-100000, 100000) + noiseSettings.offset.x;
+         float offsetY = prng.Next (-100000, 100000) + noiseSettings.offset.y;
          octaveOffsets [i] = new Vector2 (offsetX, offsetY);
       }
       octaveOffsets_ = octaveOffsets;
@@ -116,16 +118,31 @@ static float FBM(Vector2 point )
    for (int i = 0; i < octaves_; ++i)
    {
       float noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets_[i].x, point.y * frequency + octaveOffsets_[i].y);
-       
-       //test billow noise
-       // float billow = Mathf.Abs(noiseValue) * amplitude;
-       // height += billow;
-       
-       //test ridged noise
-       // float ridged = Mathf.Abs(noiseValue) * amplitude;
-       // ridged = 1f - ridged;
-       // height += ridged;
-      height += noiseValue * amplitude;
+
+      switch (noiseEffect_)
+      {
+         case NoiseGenerator.NoiseEffect.NOEFFECT:
+         {
+            height += noiseValue * amplitude;
+         } break;
+         case NoiseGenerator.NoiseEffect.BILLOW:
+         {
+            //test billow noise
+             float billow = Mathf.Abs(noiseValue) * amplitude;
+             height += billow;
+         } break;
+         case NoiseGenerator.NoiseEffect.RIDGED:
+         {
+            //test ridged noise
+            float ridged = Mathf.Abs(noiseValue) * amplitude;
+            ridged = 1f - ridged;
+            height += ridged;
+         } break;
+         default:
+         {
+            height += noiseValue * amplitude;
+         } break; 
+      }
       amplitude *= G;
       frequency *= 2.5f;
    }

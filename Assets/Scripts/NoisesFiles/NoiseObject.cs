@@ -11,7 +11,7 @@ public class NoiseSettings
     public HeightMapGenerator.NoiseType noiseType = HeightMapGenerator.NoiseType.PERLINNOISE;
     
     [Header("Map Values")]
-    [SerializeField] public float noiseScale = 0f;
+    [SerializeField] public int noiseScale = 0;
     [SerializeField] public int octaves = 1;
     //[SerializeField] public float meshHeightMultiplier = 45f;
 
@@ -26,5 +26,5 @@ public class NoiseSettings
 
     [SerializeField] public int seed;
     [SerializeField] public Vector2 offset;
-    
+
 }
