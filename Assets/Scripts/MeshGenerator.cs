@@ -59,7 +59,7 @@ public static class MeshGenerator
    
    
    
-    public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail ,AnimationCurve heightCurve, bool useCurve, Erosion erosionParameters, bool applyErosion)
+    public static MeshData GenerateMesh2(float [] terrainHeightMap,int chunkSize, float heightMultiplier, int levelOfDetail)
    {
       int width = chunkSize-1;
       int height = chunkSize-1;
@@ -70,13 +70,13 @@ public static class MeshGenerator
 
       int meshLevelOfDetailIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
       int verticesPerLine = (width - 1) / meshLevelOfDetailIncrement + 1;
+     // int verticesPerLine = width;
       
      // Debug.Log(verticesPerLine);
       
       MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
       int vertexIndex = 0;
       
-      // if (applyErosion){ HydraulicErosion.Erode2(terrainHeightMap, chunkSize, erosionParameters); Debug.Log("applied erosion");}
 
       for (int y = 0; y < height; y+= meshLevelOfDetailIncrement)
       {
@@ -84,12 +84,9 @@ public static class MeshGenerator
          {
             // give the terrain height map value for the y vertice to get height. X and Z values are centered using topleft
             // Y value is multiplied with height multiplier in order to get actual height variation
-           
             
-              //meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, heightCurve.Evaluate(terrainHeightMap[y * chunkSize + x])* heightMultiplier,topLeftz - y);
               meshData.vertices[vertexIndex] = new Vector3(topLeftx + x, terrainHeightMap[y * chunkSize + x] * heightMultiplier,topLeftz - y);
-              
-            meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
+              meshData.UVS[vertexIndex] = new Vector2(x / (float)width, y /(float)height);
 
             // Check to ignore triangles when on the edge of the map
             if (x < width - 1 && y < height - 1)
@@ -103,7 +100,6 @@ public static class MeshGenerator
          }
       }
        return meshData;
-      //return meshData.CreateMesh();
    }
    
 }

@@ -21,15 +21,15 @@ public class HeightMapGenerator : MonoBehaviour
     private NoiseLayer[] noiseLayers;
     private int octaves = 0;
 
-    [SerializeField] private int nmbOfChunks = 1;
-    private int[] mapChunks = new int[1];
+    // [SerializeField] private int nmbOfChunks = 1;
+    // private int[] mapChunks = new int[1];
 
     [SerializeField] private Erosion erosionParameters;
 
     
     public bool autoUpdateMap = false;
     public bool useFallOffMap = false;
-    [SerializeField] private AnimationCurve heightCurve;
+    [SerializeField] private AnimationCurve finalMapHeightCurve;
     public bool useHeightCurve = false;
     [SerializeField] private bool applyErosion = false;
     [SerializeField] private AnimationCurve falloffMapCurve;
@@ -43,6 +43,10 @@ public class HeightMapGenerator : MonoBehaviour
 
     private float maxNoiseHeight_;
     private float minNoiseHeight_;
+
+    [SerializeField] private ComputeShader erosionComputeShader;
+    [SerializeField] private ComputeShader heightmapComputeShader;
+    [SerializeField] private ComputeShader domainWarpingComputeShader;
     
     public enum NoiseType
     {
@@ -78,19 +82,29 @@ public class HeightMapGenerator : MonoBehaviour
     // Each noise settings will be used to create one heightmap/noise layer corresponding to the settings values.
     public void GenerateNoiseLayers()
     {
-         //Generate all the heightmaps based their settings
+        //Generate all the heightmaps based their settings
          for (int i = 1; i < noiseLayers.Length; ++i)
-        { 
+         {
+             float[] layerMap;
             noiseLayers[i].noiseSettings.seed = seed_;
             //Check if the layer has to be warped
             if (noiseLayers[i].warpNoise)
             {
-                noiseLayers[i].SetHeightmap(DomainWarpingGenerator.DomainWarping(chunkSize,chunkSize, noiseLayers[i].noiseSettings, noiseLayers[i].warpDisplacementFactor));
+                layerMap = DomainWarpingGenerator.DomainWarping(chunkSize, chunkSize, noiseLayers[i].noiseSettings,
+                    noiseLayers[i].warpDisplacementFactor);
+                // noiseLayers[i].SetHeightmap(DomainWarpingGenerator.DomainWarpingGPU(chunkSize,chunkSize,noiseLayers[i].noiseSettings, noiseLayers[i].warpDisplacementFactor, domainWarpingComputeShader ));
             }
             else
             {
-                noiseLayers[i].SetHeightmap(NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noiseLayers[i].noiseSettings));
+                layerMap = NoiseGenerator.GenerateNoiseMap2(chunkSize, chunkSize, noiseLayers[i].noiseSettings,
+                    noiseLayers[i].layerCurve, noiseLayers[i].applyFallofMap, fallOffMap);
+                // noiseLayers[i].SetHeightmap(NoiseGenerator.GenerateNoiseMapGPU(chunkSize, chunkSize, noiseLayers[i].noiseSettings, heightmapComputeShader));
             }
+            if (noiseLayers[i].applyHeightCurve)
+            {
+                layerMap = applyHeightCurveToMap(noiseLayers[i].GetHeightmap(), chunkSize, noiseLayers[i].layerCurve);
+            } 
+            noiseLayers[i].SetHeightmap(layerMap);
         }
     }
 
@@ -101,7 +115,6 @@ public class HeightMapGenerator : MonoBehaviour
         //New test // NEED TO BE FULLY TESTED WITH MIN VALUE ETC... and test to not override value with each layer
         for (int i = 1; i < noiseLayers.Length; ++i)
         {
-            float elevation = 0f;
             for (int y = 0; y < chunkSize; ++y)
             {
                 for (int x = 0; x < chunkSize; ++x)
@@ -132,13 +145,13 @@ public class HeightMapGenerator : MonoBehaviour
     {
         seed_ = UnityEngine.Random.Range(0, 1000000);
     }
-    float[] applyHeightCurveToMap(float[] noiseMap)
+    float[] applyHeightCurveToMap(float[] noiseMap,int mapSize, AnimationCurve mapCurve)
     {
-        for (int y = 0; y < chunkSize; ++y)
+        for (int y = 0; y < mapSize; ++y)
         {
-            for (int x = 0; x < chunkSize; ++x)
+            for (int x = 0; x < mapSize; ++x)
             {
-                noiseMap[y * chunkSize + x] = heightCurve.Evaluate(noiseMap[y * chunkSize + x]);
+                noiseMap[y * mapSize + x] = mapCurve.Evaluate(noiseMap[y * mapSize + x]);
             }
         }
         return noiseMap;
@@ -156,9 +169,17 @@ public class HeightMapGenerator : MonoBehaviour
        //This loop purpose is to get the values back to 0-1
        if (maxNoiseHeight_ != minNoiseHeight_)
        {
-           for (int i = 0; i < finalMap_.Length; ++i)
+           for (int y = 0; y < chunkSize; ++y)
            {
-               finalMap_[i] = (finalMap_[i] - minNoiseHeight_) / (maxNoiseHeight_ - minNoiseHeight_);
+               for (int x = 0; x < chunkSize; ++x)
+               {
+                   finalMap_[y * chunkSize + x] =
+                       Mathf.InverseLerp(minNoiseHeight_, maxNoiseHeight_, finalMap_[y * chunkSize + x]);
+                   if (useFallOffMap)
+                   {
+                       finalMap_[y * chunkSize + x] = Mathf.Clamp01(finalMap_[y * chunkSize + x] - fallOffMap[x, y]) ;
+                   }
+               }
            }
        }
 
@@ -177,7 +198,11 @@ public class HeightMapGenerator : MonoBehaviour
        //DetermineTerrainType(noiseMap,colorMap);
         DetermineTerrainType2(finalMap_, colorMap);
 
-        if (applyErosion){ HydraulicErosion.Erode2(finalMap_, chunkSize, erosionParameters);}
+        if (applyErosion)
+        {
+            // HydraulicErosion.Erode2(finalMap_, chunkSize, erosionParameters);    
+           finalMap_ = HydraulicErosion.ErodeFromComputeShader(finalMap_, chunkSize, erosionParameters ,erosionComputeShader);
+        }
 
 
         MapPlaneDisplayer mapDisplay = FindObjectOfType<MapPlaneDisplayer>();
@@ -194,12 +219,11 @@ public class HeightMapGenerator : MonoBehaviour
         }
         else if (drawMode == MapDrawMode.MESH)
         {
-            if(useHeightCurve)finalMap_ = applyHeightCurveToMap(finalMap_);
+            if(useHeightCurve)finalMap_ = applyHeightCurveToMap(finalMap_, chunkSize,finalMapHeightCurve);
             if (applyScalingRatio) meshMultiplier_ = (noiseLayers[1].noiseSettings.noiseScale * 2);
             int meshMultiplier = applyScalingRatio ? noiseLayers[1].noiseSettings.noiseScale * 2 : meshMultiplier_;
             mapDisplay.DrawMesh(
-                MeshGenerator.GenerateMesh2(finalMap_, chunkSize, meshMultiplier, levelOfDetail, heightCurve,
-                    useHeightCurve, erosionParameters, applyErosion), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
+                MeshGenerator.GenerateMesh2(finalMap_, chunkSize, meshMultiplier, levelOfDetail), TextureGenerator.TextureFromColorMap2(colorMap, chunkSize, chunkSize));
             //Show noise map
             Texture2D texture = TextureGenerator.TextureFromHeightMap2(finalMap_, chunkSize);
             mapDisplay.DrawTexture(texture);
@@ -221,10 +245,7 @@ public class HeightMapGenerator : MonoBehaviour
             for (int x = 0; x < chunkSize; x++)
             {
                 // Using the falloff map
-                if (useFallOffMap)
-                {
-                    noiseMap[y * chunkSize + x] = Mathf.Clamp01(noiseMap[y * chunkSize + x] - fallOffMap[x, y]) ;
-                }
+               
                 
                 float currentHeight = noiseMap[y * chunkSize + x];
                 for (int i = 0; i < mapRegions.Length; i++)

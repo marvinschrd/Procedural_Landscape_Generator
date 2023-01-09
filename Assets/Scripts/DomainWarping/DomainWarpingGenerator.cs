@@ -9,9 +9,7 @@ public static class DomainWarpingGenerator
    private static int octaves_ = 5;
    private static float persistance_ = 0.18f;
    private static float lacunarity_ = 3.0f;
-
-   private static float amplitude_ = 1.0f;
-   private static float frequency_ = 1.0f;
+   
    private static float noiseHeight_ = 0.0f;
    private static float H = 0.5f;
    private static Vector2 [] octaveOffsets_;
@@ -38,6 +36,7 @@ public static class DomainWarpingGenerator
       octaves_ = noiseSettings.octaves;
       seed_ = noiseSettings.seed;
       persistance_ = noiseSettings.persistance;
+      lacunarity_ = noiseSettings.lacunarity;
       displacementFactor_ = displacementFactor;
       noiseEffect_ = noiseSettings.noiseEffect;
       System.Random prng = new System.Random (seed_);
@@ -85,6 +84,55 @@ public static class DomainWarpingGenerator
       return map;
    }
 
+   static public float[] DomainWarpingGPU(int width, int heigth, NoiseSettings noiseSettings, float displacementFactor, ComputeShader domainWarpingComputeShader)
+   {
+      var prng = new System.Random (noiseSettings.seed);
+
+      Vector2[] offsets = new Vector2[noiseSettings.octaves];
+      for (int i = 0; i < noiseSettings.octaves; ++i) {
+         offsets[i] = new Vector2 (prng.Next (-10000, 10000), prng.Next (-10000, 10000));
+      }
+      ComputeBuffer offsetsBuffer = new ComputeBuffer (offsets.Length, sizeof (float) * 2);
+      offsetsBuffer.SetData (offsets);
+      domainWarpingComputeShader.SetBuffer (0, "offsets", offsetsBuffer);
+
+      int floatToIntMultiplier = 1000;
+      float[] heightMap = new float[width * heigth];
+
+      ComputeBuffer heightMapBuffer = new ComputeBuffer (heightMap.Length, sizeof (int));
+      heightMapBuffer.SetData (heightMap);
+      domainWarpingComputeShader.SetBuffer (0, "heightMap", heightMapBuffer);
+
+      int[] minMaxHeight = { floatToIntMultiplier * noiseSettings.octaves, 0 };
+      ComputeBuffer minMaxBuffer = new ComputeBuffer (minMaxHeight.Length, sizeof (int));
+      minMaxBuffer.SetData (minMaxHeight);
+      domainWarpingComputeShader.SetBuffer (0, "minMax", minMaxBuffer);
+
+      domainWarpingComputeShader.SetInt ("mapSize", heigth);
+      domainWarpingComputeShader.SetInt ("octaves", noiseSettings.octaves);
+      domainWarpingComputeShader.SetFloat ("lacunarity", noiseSettings.lacunarity);
+      domainWarpingComputeShader.SetFloat ("persistence", noiseSettings.persistance);
+      domainWarpingComputeShader.SetFloat ("scaleFactor", noiseSettings.noiseScale);
+      domainWarpingComputeShader.SetFloat ("displacementFactor", displacementFactor);
+      
+      int numThreadGroup = heightMap.Length / 1024;
+      domainWarpingComputeShader.Dispatch (0, numThreadGroup, 1, 1);
+
+      heightMapBuffer.GetData (heightMap);
+      minMaxBuffer.GetData (minMaxHeight);
+      heightMapBuffer.Release ();
+      minMaxBuffer.Release ();
+      offsetsBuffer.Release ();
+
+      float minValue = (float) minMaxHeight[0] / (float) floatToIntMultiplier;
+      float maxValue = (float) minMaxHeight[1] / (float) floatToIntMultiplier;
+
+      for (int i = 0; i < heightMap.Length; i++) {
+         heightMap[i] = Mathf.InverseLerp (minValue, maxValue, heightMap[i]);
+      }
+
+      return heightMap;
+   }
    static float Pattern(Vector2 point)
    {
       //First Warping
@@ -94,7 +142,6 @@ public static class DomainWarpingGenerator
          FBM(P1),
          FBM(P2)
       );
-      Vector2 q2 = point + displacementFactor_ * q;
 
       //Second Warping
       Vector2 P3 = point + displacementFactor_ * q + new Vector2(1.7f, 9.2f);
@@ -144,11 +191,14 @@ static float FBM(Vector2 point )
          } break; 
       }
       amplitude *= G;
-      frequency *= 2.5f;
+      // frequency *= 2.5f;
+      frequency *= lacunarity_;
    }
 
    return height;
 }
+
+
 
 static void SetCorrectNoiseType(HeightMapGenerator.NoiseType noiseType)
 {

@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public static class HydraulicErosion 
 {
@@ -261,6 +263,86 @@ public static class HydraulicErosion
 
         return new HeightAndGradient () { height = height, surfaceNormalX = gradientX, surfaceNormalY = gradientY };
     }
-    
+
+    //Erosion process but done on a compute shader
+    //All the erosion parameters are given to the compute shader and the needed buffer are created
+    public static float [] ErodeFromComputeShader(float [] finalMap, int mapSize, Erosion erosionParameters, ComputeShader erosionComputeShader )
+    {
+        ComputeBuffer mapBuffer = new ComputeBuffer(finalMap.Length, sizeof(float));
+        mapBuffer.SetData(finalMap);
+        erosionComputeShader.SetBuffer(0,"finalMap", mapBuffer);
+        
+        int numThreadGroups = erosionParameters.dropletNumber / 1024;
+        
+        //Set alt the values and buffers
+        // ------------------------------------------------------------------------------------------------------
+        // Create brush
+        List<int> brushIndexOffsets = new List<int> ();
+        List<float> brushWeights = new List<float> ();
+
+        float weightSum = 0;
+        for (int brushY = -erosionParameters.erosionRadius; brushY <= erosionParameters.erosionRadius; brushY++) {
+            for (int brushX = -erosionParameters.erosionRadius; brushX <= erosionParameters.erosionRadius; brushX++) {
+                float sqrDst = brushX * brushX + brushY * brushY;
+                if (sqrDst < erosionParameters.erosionRadius * erosionParameters.erosionRadius) {
+                    brushIndexOffsets.Add (brushY * mapSize + brushX);
+                    float brushWeight = 1 - Mathf.Sqrt (sqrDst) / erosionParameters.erosionRadius;
+                    weightSum += brushWeight;
+                    brushWeights.Add (brushWeight);
+                }
+            }
+        }
+        for (int i = 0; i < brushWeights.Count; i++) {
+            brushWeights[i] /= weightSum;
+        }
+
+        // Send brush data to compute shader
+        ComputeBuffer brushIndexBuffer = new ComputeBuffer (brushIndexOffsets.Count, sizeof (int));
+        ComputeBuffer brushWeightBuffer = new ComputeBuffer (brushWeights.Count, sizeof (int));
+        brushIndexBuffer.SetData (brushIndexOffsets);
+        brushWeightBuffer.SetData (brushWeights);
+        erosionComputeShader.SetBuffer (0, "brushIndices", brushIndexBuffer);
+        erosionComputeShader.SetBuffer (0, "brushWeights", brushWeightBuffer);
+        
+        // Generate random indices for droplet placement
+        int[] randomIndices = new int[erosionParameters.dropletNumber];
+        for (int i = 0; i < erosionParameters.dropletNumber; i++) {
+            int randomX = Random.Range (erosionParameters.erosionRadius, mapSize + erosionParameters.erosionRadius);
+            int randomY = Random.Range (erosionParameters.erosionRadius, mapSize + erosionParameters.erosionRadius);
+            randomIndices[i] = randomY * mapSize + randomX;
+        }
+
+        // Send random indices to compute shader
+        ComputeBuffer randomIndexBuffer = new ComputeBuffer (randomIndices.Length, sizeof (int));
+        randomIndexBuffer.SetData (randomIndices);
+        erosionComputeShader.SetBuffer (0, "randomIndices", randomIndexBuffer);
+        
+        erosionComputeShader.SetInt("maxDropletLifeTime",erosionParameters.dropletLifetime);
+        erosionComputeShader.SetInt("mapSize",mapSize);
+        erosionComputeShader.SetInt ("brushLength", brushIndexOffsets.Count);
+        erosionComputeShader.SetInt ("borderSize", erosionParameters.erosionRadius);
+        erosionComputeShader.SetFloat("gravity",erosionParameters.gravity);
+        erosionComputeShader.SetFloat("inertia",erosionParameters.inertia);
+        erosionComputeShader.SetFloat("depositSpeed",erosionParameters.depositSpeed);
+        erosionComputeShader.SetFloat("erosionSpeed",erosionParameters.erosionRate);
+        erosionComputeShader.SetFloat("evaporationSpeed",erosionParameters.evaporateSpeed);
+        erosionComputeShader.SetFloat("initialSpeed",erosionParameters.initialSpeed);
+        erosionComputeShader.SetFloat("initialWaterVolume",erosionParameters.initialWaterVolume);
+        erosionComputeShader.SetFloat("minSedimentCapacity",erosionParameters.minSedimentCapacity);
+        erosionComputeShader.SetFloat("sedimentCapacityFactor",erosionParameters.sedimentCapacityFactor);
+
+
+
+        //Dispatch and run the kernel for computation
+        erosionComputeShader.Dispatch(0, numThreadGroups, 1, 1);
+        mapBuffer.GetData(finalMap);
+        
+        randomIndexBuffer.Release();
+        brushIndexBuffer.Release();
+        brushWeightBuffer.Release();
+        mapBuffer.Release();
+
+        return finalMap;
+    }
     
 }

@@ -19,15 +19,15 @@ public static class NoiseGenerator
  // private static int octaves_;
  private static  Vector2[] octaveOffsets_;
  
- static float maxNoiseHeight_ = float.MinValue;
- static float minNoiseHeight_ = float.MaxValue;
+ // static float maxNoiseHeight_ = float.MinValue;
+ // static float minNoiseHeight_ = float.MaxValue;
 
  public enum NoiseEffect
  {
-    RIDGED,
-    SHARP_RIDGED,
+    NOEFFECT,
     BILLOW,
-    NOEFFECT
+    RIDGED,
+    TERRACE,
  }
  
  // public static float[,] GenerateNoiseMap(int mapWidth, int mapHeight, int seed, float scale, int octaves, float persistance, float lacunarity, Vector2 offset,HeightMapGenerator.NoiseType noiseType, bool applyRidges)
@@ -181,7 +181,7 @@ public static class NoiseGenerator
  }
  
  //NoiseMap is equivalent to noise filter, and noiseMap = heightmap
- public static float[] GenerateNoiseMap2(int mapWidth, int mapHeight, NoiseSettings settings)
+ public static float[] GenerateNoiseMap2(int mapWidth, int mapHeight, NoiseSettings settings, AnimationCurve layerCurve, bool applyFallofMap, float [,] fallofMap)
  {
     mapWidth_ = mapWidth;
     mapHeight_ = mapHeight;
@@ -200,31 +200,6 @@ public static class NoiseGenerator
       }
       octaveOffsets_ = octaveOffsets;
 
-      // Create and configure FastNoise object
-      // Currently reducing the scale because of the apparent huge difference in size between
-      // the unity perlin noise and Fastnoiselite opensimplexnoise
-      // if (noiseType == HeightMapGenerator.NoiseType.SIMPLEXNOISE)
-      // {
-      //    //scale /= 60f;
-      //    noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-      // }
-      // else if (noiseType == HeightMapGenerator.NoiseType.PERLINNOISE)
-      // {
-      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
-      // }
-      // else if (noiseType == HeightMapGenerator.NoiseType.CELLULARNOISE)
-      // {
-      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-      // }
-      // else if (noiseType == HeightMapGenerator.NoiseType.CUBICNOISE)
-      // {
-      //    noise.SetNoiseType(FastNoiseLite.NoiseType.ValueCubic);
-      // }
-      // else if (noiseType == HeightMapGenerator.NoiseType.VALUENOISE)
-      // {
-      //    noise.SetNoiseType(FastNoiseLite.NoiseType.Value);
-      // }
-      
       if (scale_ <= 0) {
          scale_ = 0.0001f;
       }
@@ -235,14 +210,13 @@ public static class NoiseGenerator
       float minNoiseHeight = float.MaxValue;
       
       
-      
       HeightMapGenerator.NoiseType noiseType = settings.noiseType;
       SetCorrectNoiseType(noiseType);
 
       // Calculate the half witdh and half heigth in order to zoom in the center of the map instead of into the corner
       float halfWidth = mapWidth *0.5f;
       float halfHeight = mapHeight *0.5f;
-      float noiseValue;
+      float noiseValue = 0;
       
       //Loop for every cell of the terrain
       for (int y = 0; y < mapHeight; ++y) {
@@ -251,34 +225,17 @@ public static class NoiseGenerator
             float amplitude = 1;
             float frequency = 1;
             float noiseHeight = 0;
-            float weight = 1;
-            
-            // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
-            // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
 
-            //Vector2 point = new Vector2(x, y);
-           
-           
-                  float sampleX = (x - halfWidth) / scale_;
+            float sampleX = (x - halfWidth) / scale_;
                   float sampleY = (y - halfHeight) / scale_;
             
                   Vector2 point = new Vector2(sampleX, sampleY);
                
                // //FBM starts here
                for (int i = 0; i < settings.octaves; i++) {
-                  // float sampleX = (x-halfWidth) / scale * frequency + octaveOffsets[i].x;
-                  // float sampleY = (y-halfHeight) / scale * frequency + octaveOffsets[i].y;
-               
                   
-                  // float sampleX = (x-halfWidth) * fr + octaveOffsets[i].x;
-                  // float sampleY = (y-halfHeight) * 1.2f + octaveOffsets[i].y;
-                  // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
-               
-                  //test some things here
                   noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets[i].x , point.y * frequency + octaveOffsets[i].y);
                   
-                  //noiseValue = noise.GetNoise(point.x, point.y);
-               
                   //Apply a specific effect to this noise map
                   switch (settings.noiseEffect)
                   {
@@ -295,20 +252,15 @@ public static class NoiseGenerator
                         // Take the opposite of the billow noise to create the ridges instead of hills
                         float n = Mathf.Abs(noiseValue) * amplitude;
                         n = 1f - n;
-                        // n *= weight;
-                        // weight = n;
                         noiseHeight += n;
                      }
                         break;
-                     case NoiseEffect.SHARP_RIDGED:
+                     case NoiseEffect.TERRACE:
                      {
                         // Take the opposite of the billow noise to create the ridges instead of hills
                         float n = Mathf.Abs(noiseValue) * amplitude;
                         n = 1f - n;
-                        // Power of 2 to have even sharper ridges
-                        n *= n * n;
-                        // n *= weight;
-                        // weight = n;
+                        n = Mathf.Round(n * 12);
                         noiseHeight += n;
                      }
                         break;
@@ -318,198 +270,186 @@ public static class NoiseGenerator
                      }
                         break;
                   }
-               
                   amplitude *= settings.persistance; //strength/gain
                   frequency *= settings.lacunarity; //roughness
                }
                
-               
-             
-               
-               
-               
-                
-                if (noiseHeight > maxNoiseHeight) {
+               if (noiseHeight > maxNoiseHeight) {
                    maxNoiseHeight = noiseHeight;
-                } else if (noiseHeight < minNoiseHeight) {
+               } else if (noiseHeight < minNoiseHeight) {
                    minNoiseHeight = noiseHeight;
-                }
-
-                //Used to make the heightmap able to lower into the original plane as min value grow
-               // noiseHeight = Mathf.Max(0, noiseHeight - settings.minValue);
-                noiseMap2[y * mapHeight + x] = noiseHeight;
-
-                // noiseMap[x, y] = SimpleFBM(new Vector2(x, y));
-
-
+            }
+               
+            noiseMap2[y * mapHeight + x] = noiseHeight;
          }
       }
-      //This loop purpose is to get the values back to 0-1
-      if (maxNoiseHeight != minNoiseHeight)
+      // Apply clamping of values back to 0-1 and fallofMap in the same loop to avoid having to iterate over the map another time later.
+      for (int y = 0; y < mapHeight; ++y)
       {
-         for (int i = 0; i < noiseMap2.Length; ++i)
+         for (int x = 0; x < mapHeight; ++x)
          {
-            noiseMap2[i] = (noiseMap2[i] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
+            noiseMap2[y * mapHeight + x] = Mathf.InverseLerp(minNoiseHeight, maxNoiseHeight, noiseMap2[y * mapHeight + x]);
+            if(applyFallofMap) noiseMap2[y * mapHeight + x] = Mathf.Clamp01(noiseMap2[y * mapHeight + x] - fallofMap[x, y]);
          }
       }
       return noiseMap2;
    }
 
- // static float Pattern(Vector2 point)
- // {
- //    Vector2 q = new Vector2(FBM(x,y), FBM(x,y));
- // }
  
- static float FBM(Vector2 point, int octaves, float lacunarity, float persistance, float halfWidth, float halfHeight, float noiseValue, float frequency, float amplitude, Vector2 [] octaveOffsets, NoiseEffect noiseEffect, float noiseHeight)
+
+ static public float[] GenerateNoiseMapGPU(int mapWidth, int mapHeight, NoiseSettings settings,
+    ComputeShader heightmapComputeShader)
  {
-    //FBM starts here
-                for (int i = 0; i < octaves; i++) {
-                  
+    //    int floatToIntMultiplier = 1000;
+    //    // Use the seed to generate the same map regarding the given seed
+    //    System.Random prng = new System.Random(settings.seed);
+    //
+    //    float maxNoiseHeight = float.MinValue;
+    //    float minNoiseHeight = float.MaxValue;
+    //
+    //    HeightMapGenerator.NoiseType noiseType = settings.noiseType;
+    //    SetCorrectNoiseType(noiseType);
+    //
+    //    //Set Compute shader params
+    //
+    //    // Give an offset to each octave in order to sample them from random different locations
+    //    Vector2[] octaveOffsets = new Vector2[settings.octaves];
+    //    for (int i = 0; i < settings.octaves; i++)
+    //    {
+    //       octaveOffsets[i] = new Vector2(prng.Next(-10000, 10000), prng.Next(-10000, 10000));
+    //    }
+    //
+    //    ComputeBuffer offsetsBuffer = new ComputeBuffer(octaveOffsets.Length, sizeof(float) * 2);
+    //    offsetsBuffer.SetData(octaveOffsets);
+    //    heightmapComputeShader.SetBuffer(0, "octavesOffsets", offsetsBuffer);
+    //
+    //
+    //    float[] heightmap = new float[mapHeight * mapWidth];
+    //    // Set heightmap buffer
+    //    ComputeBuffer heightmapBuffer = new ComputeBuffer(heightmap.Length, sizeof(int));
+    //    heightmapBuffer.SetData(heightmap);
+    //    heightmapComputeShader.SetBuffer(0, "finalMap", heightmapBuffer);
+    //
+    //    // Set minMaxHeight buffer for later scaling values back to 0-1
+    //    int[] minMaxHeight = { floatToIntMultiplier * settings.octaves, 0 };
+    //    ComputeBuffer minMaxBuffer = new ComputeBuffer(minMaxHeight.Length, sizeof(int));
+    //    minMaxBuffer.SetData(minMaxHeight);
+    //    heightmapComputeShader.SetBuffer(0, "minMax", minMaxBuffer);
+    //
+    //    bool isPerlinNoise = settings.noiseType == HeightMapGenerator.NoiseType.PERLINNOISE;
+    //    heightmapComputeShader.SetBool("isPerlinNoise", isPerlinNoise);
+    //    switch (settings.noiseEffect)
+    //    {
+    //       case NoiseEffect.NOEFFECT:
+    //       {
+    //          heightmapComputeShader.SetInt("noiseEffect", 0);
+    //       }
+    //          break;
+    //       case NoiseEffect.BILLOW:
+    //       {
+    //          heightmapComputeShader.SetInt("noiseEffect", 1);
+    //       }
+    //          break;
+    //       case NoiseEffect.RIDGED:
+    //       {
+    //          heightmapComputeShader.SetInt("noiseEffect", 2);
+    //       }
+    //          break;
+    //    }
+    //    heightmapComputeShader.SetInt("mapSize", mapHeight);
+    //    heightmapComputeShader.SetInt("octaves", settings.octaves);
+    //    heightmapComputeShader.SetInt("mapScale", settings.noiseScale);
+    //    //heightmapComputeShader.SetInt("floatToIntMultiplier", floatToIntMultiplier);
+    //
+    //    heightmapComputeShader.SetFloat("lacunarity", settings.lacunarity);
+    //    heightmapComputeShader.SetFloat("persistance", settings.persistance);
+    //
+    //    heightmapComputeShader.Dispatch(0, heightmap.Length, 1, 1);
+    //
+    //    //Get data from buffers
+    //    heightmapBuffer.GetData(heightmap);
+    //    minMaxBuffer.GetData(minMaxHeight);
+    //
+    //    //Release buffers
+    //    heightmapBuffer.Release();
+    //    minMaxBuffer.Release();
+    //    offsetsBuffer.Release();
+    //
+    //    // Bring values back to 0-1
+    //    float minValue = minMaxHeight[0] / (float) floatToIntMultiplier;
+    //    float maxValue = minMaxHeight[1] / (float) floatToIntMultiplier;
+    //
+    //    for (int i = 0; i < heightmap.Length; i++) {
+    //       heightmap[i] = Mathf.InverseLerp (minValue, maxValue, heightmap[i]);
+    //    }
+    //
+    //    return heightmap;
+    // }
 
-                   //test some things here
-                   noiseValue = noise.GetNoise(point.x * frequency + octaveOffsets[i].x , point.y * frequency + octaveOffsets[i].y);
-                   
-                   //noiseValue = noise.GetNoise(point.x, point.y);
 
-                   //Apply a specific effect to this noise map
-                   switch (noiseEffect)
-                   {
-                      // Billow noise will create round hills and shapes on the noise
-                      case NoiseEffect.BILLOW :
-                      {
-                         float n = Mathf.Abs(noiseValue) * amplitude;
-                         noiseHeight += n;
-                      }
-                         break;
-                      // Ridged noise will create sharp ridge, mountains peaks
-                      case NoiseEffect.RIDGED:
-                      {
-                         // Take the opposite of the billow noise to create the ridges instead of hills
-                         float n = Mathf.Abs(noiseValue) * amplitude;
-                         n = 1f - n;
-                         // n *= weight;
-                         // weight = n;
-                         noiseHeight += n;
-                      }
-                         break;
-                      case NoiseEffect.SHARP_RIDGED:
-                      {
-                         // Take the opposite of the billow noise to create the ridges instead of hills
-                         float n = Mathf.Abs(noiseValue) * amplitude;
-                         n = 1f - n;
-                         // Power of 3 to have even sharper ridges
-                         n *= n * n;
-                         // n *= weight;
-                         // weight = n;
-                         noiseHeight += n;
-                      }
-                         break;
-                      case NoiseEffect.NOEFFECT:
-                      {
-                         noiseHeight += noiseValue * amplitude; //strength
-                      }
-                         break;
-                   }
+    var prng = new System.Random (settings.seed);
 
-                   amplitude *= persistance; //strength/gain
-                   frequency *= lacunarity; //roughness
-                }
+    Vector2[] offsets = new Vector2[settings.octaves];
+    for (int i = 0; i < settings.octaves; i++) {
+       offsets[i] = new Vector2 (prng.Next (-10000, 10000), prng.Next (-10000, 10000));
+    }
+    ComputeBuffer offsetsBuffer = new ComputeBuffer (offsets.Length, sizeof (float) * 2);
+    offsetsBuffer.SetData (offsets);
+    heightmapComputeShader.SetBuffer (0, "offsets", offsetsBuffer);
 
-                return noiseHeight;
+    int floatToIntMultiplier = 1000;
+    float[] heightMap = new float[mapWidth * mapHeight];
+
+    ComputeBuffer heightMapBuffer = new ComputeBuffer (heightMap.Length, sizeof (int));
+    heightMapBuffer.SetData (heightMap);
+    heightmapComputeShader.SetBuffer (0, "heightMap", heightMapBuffer);
+
+    int[] minMaxHeight = { floatToIntMultiplier * settings.octaves, 0 };
+    ComputeBuffer minMaxBuffer = new ComputeBuffer (minMaxHeight.Length, sizeof (int));
+    minMaxBuffer.SetData (minMaxHeight);
+    heightmapComputeShader.SetBuffer (0, "minMax", minMaxBuffer);
+
+    heightmapComputeShader.SetInt ("mapSize", mapHeight);
+    heightmapComputeShader.SetInt ("octaves", settings.octaves);
+    heightmapComputeShader.SetFloat ("lacunarity", settings.lacunarity);
+    heightmapComputeShader.SetFloat ("persistence", settings.persistance);
+    heightmapComputeShader.SetFloat ("scaleFactor", settings.noiseScale);
+    switch (settings.noiseEffect)
+    {
+       case NoiseEffect.NOEFFECT:
+       {
+          heightmapComputeShader.SetInt("noiseEffect", 0);
+       }
+          break;
+       case NoiseEffect.BILLOW:
+       {
+          heightmapComputeShader.SetInt("noiseEffect", 1);
+       }
+          break;
+       case NoiseEffect.RIDGED:
+       {
+          heightmapComputeShader.SetInt("noiseEffect", 2);
+       }
+          break;
+    }
+    heightmapComputeShader.SetInt ("floatToIntMultiplier", floatToIntMultiplier);
+
+    int numThreadGroup = heightMap.Length / 1024;
+    heightmapComputeShader.Dispatch (0, numThreadGroup, 1, 1);
+
+    heightMapBuffer.GetData (heightMap);
+    minMaxBuffer.GetData (minMaxHeight);
+    heightMapBuffer.Release ();
+    minMaxBuffer.Release ();
+    offsetsBuffer.Release ();
+
+    float minValue = (float) minMaxHeight[0] / (float) floatToIntMultiplier;
+    float maxValue = (float) minMaxHeight[1] / (float) floatToIntMultiplier;
+
+    for (int i = 0; i < heightMap.Length; i++) {
+       heightMap[i] = Mathf.InverseLerp (minValue, maxValue, heightMap[i]);
+    }
+
+    return heightMap;
  }
- 
-   // static float SimpleFBM(Vector2 point)
-   // {
-   //    float noiseSum = 0;
-   //    float amplitude = 1;
-   //    float frequency = 1;
-   //    
-   //    
-   //    for (int i = 0; i < octaves_; ++i)
-   //    {
-   //       // float sampleX = (point.x-mapWidth_ *0.5f) / scale_ * frequency + octaveOffsets_[i].x;
-   //       // float sampleY = (point.y-mapHeight_ * 0.5f) / scale_ * frequency + octaveOffsets_[i].y;
-   //      // noiseSum += noise.GetNoise(point.x * frequency, point.y * frequency) * amplitude;
-   //       noiseSum += noise.GetNoise(point.x * frequency, point.y * frequency);
-   //       Debug.Log(noiseSum);
-   //       frequency *= 2;
-   //       amplitude *= 0.5f;
-   //    }
-   //    
-   //    if (noiseSum > maxNoiseHeight_) {
-   //       maxNoiseHeight_ = noiseSum;
-   //    } else if (noiseSum < minNoiseHeight_) {
-   //       minNoiseHeight_ = noiseSum;
-   //    }
-   //
-   //    return noiseSum;
-   // }
-
-// currently not working : do not use
-   // static float FBM(Vector2 point)
-   // {
-   //    float amplitude = 1;
-   //    float frequency = 1;
-   //    float noiseHeight = 0;
-   //    
-   //    for (int i = 0; i < octaves_; i++) {
-   //       // float noiseValue = noise.GetNoise(sampleX, sampleY) * 2 - 1;
-   //       float noiseValue = noise.GetNoise(point.x, point.y);
-   //
-   //       bool applyRidges = false;
-   //       if (applyRidges)
-   //       {
-   //          float n = Mathf.Abs(noiseValue) * amplitude;
-   //          n = 1f - n;
-   //          noiseHeight += n * n;
-   //       }
-   //       else
-   //       {
-   //          noiseHeight += noiseValue * amplitude;
-   //       }
-   //             
-   //       amplitude *= 0.5f;
-   //       frequency *= 2;
-   //    }
-   //
-   //    // if (noiseHeight > maxNoiseHeight) {
-   //    //    maxNoiseHeight = noiseHeight;
-   //    // } else if (noiseHeight < minNoiseHeight) {
-   //    //    minNoiseHeight = noiseHeight;
-   //    // }
-   //
-   //    return noiseHeight;
-   // }
-   
-   
-   
-// not working
-  // public static float Warping(Vector2 point)
-  //  {
-  //     Vector2 offset1 = new Vector2(4.2f, 0.5f);
-  //     Vector2 offset2 = new Vector2(5.2f, 1.3f);
-  //
-  //     Vector2 q = new Vector2(SimpleFBM(point + offset1),
-  //                             SimpleFBM(point + offset2));
-  //
-  //    // return SimpleFBM(point + 5.0f * q);
-  //     return SimpleFBM(point +q * 5.0f);
-  //
-  //  }
-
- // static  private float[,] m = new float[2, 2] { { 0.8f, -0.6f }, { .6f, 0.8f } };
- //  float DerivativeFBM(Vector2 point)
- //  {
- //     float a = 0;
- //     float b = 1.0f;
- //     Vector2 d = new Vector2(0, 0);
- //
- //     for (int i = 0; i <= 15; ++i)
- //     {
- //        Vector3 n = noise.GetNoise(point.x, point.y,0);
- //        Debug.Log(Mathf.Floor(10.0F));   // Prints  10
- //     }
- //     
- //  }
-   
 }
