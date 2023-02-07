@@ -84,52 +84,56 @@ public static class DomainWarpingGenerator
       return map;
    }
 
-   static public float[] DomainWarpingGPU(int width, int heigth, NoiseSettings noiseSettings, float displacementFactor, ComputeShader domainWarpingComputeShader)
+   static public float[] DomainWarpingGPU(int width, int height, NoiseSettings noiseSettings, float displacementFactor, ComputeShader domainWarpingComputeShader)
    {
-      var prng = new System.Random (noiseSettings.seed);
-
+      var prng = new System.Random(noiseSettings.seed);
       Vector2[] offsets = new Vector2[noiseSettings.octaves];
-      for (int i = 0; i < noiseSettings.octaves; ++i) {
+      for (int i = 0; i < noiseSettings.octaves; i++) {
          offsets[i] = new Vector2 (prng.Next (-10000, 10000), prng.Next (-10000, 10000));
       }
-      ComputeBuffer offsetsBuffer = new ComputeBuffer (offsets.Length, sizeof (float) * 2);
-      offsetsBuffer.SetData (offsets);
-      domainWarpingComputeShader.SetBuffer (0, "offsets", offsetsBuffer);
 
+      ComputeBuffer offsetBuffer = new ComputeBuffer(offsets.Length, sizeof(float) * 2);
+      offsetBuffer.SetData(offsets);
+      domainWarpingComputeShader.SetBuffer(0,"offsetBuffer", offsetBuffer );
       int floatToIntMultiplier = 1000;
-      float[] heightMap = new float[width * heigth];
 
-      ComputeBuffer heightMapBuffer = new ComputeBuffer (heightMap.Length, sizeof (int));
-      heightMapBuffer.SetData (heightMap);
-      domainWarpingComputeShader.SetBuffer (0, "heightMap", heightMapBuffer);
-
+      float[] heightMap = new float[width * width];
+      ComputeBuffer heightMapComputeBuffer = new ComputeBuffer(heightMap.Length, sizeof(float));
+      heightMapComputeBuffer.SetData(heightMap);
+      domainWarpingComputeShader.SetBuffer(0, "heightmapComputeBuffer", heightMapComputeBuffer);
+      
       int[] minMaxHeight = { floatToIntMultiplier * noiseSettings.octaves, 0 };
       ComputeBuffer minMaxBuffer = new ComputeBuffer (minMaxHeight.Length, sizeof (int));
       minMaxBuffer.SetData (minMaxHeight);
       domainWarpingComputeShader.SetBuffer (0, "minMax", minMaxBuffer);
-
-      domainWarpingComputeShader.SetInt ("mapSize", heigth);
-      domainWarpingComputeShader.SetInt ("octaves", noiseSettings.octaves);
+      
+      domainWarpingComputeShader.SetInt("mapSize", width);
+      domainWarpingComputeShader.SetInt("octaves", noiseSettings.octaves);
       domainWarpingComputeShader.SetFloat ("lacunarity", noiseSettings.lacunarity);
       domainWarpingComputeShader.SetFloat ("persistence", noiseSettings.persistance);
       domainWarpingComputeShader.SetFloat ("scaleFactor", noiseSettings.noiseScale);
-      domainWarpingComputeShader.SetFloat ("displacementFactor", displacementFactor);
+      domainWarpingComputeShader.SetFloat("displacementFactor", displacementFactor);
+      domainWarpingComputeShader.SetInt("floatToIntMultiplier", floatToIntMultiplier);
       
       int numThreadGroup = heightMap.Length / 1024;
+      numThreadGroup = numThreadGroup >= 1 ? numThreadGroup : 1;
       domainWarpingComputeShader.Dispatch (0, numThreadGroup, 1, 1);
-
-      heightMapBuffer.GetData (heightMap);
+      
+      heightMapComputeBuffer.GetData (heightMap);
       minMaxBuffer.GetData (minMaxHeight);
-      heightMapBuffer.Release ();
+      heightMapComputeBuffer.Release ();
       minMaxBuffer.Release ();
-      offsetsBuffer.Release ();
+      offsetBuffer.Release ();
 
       float minValue = (float) minMaxHeight[0] / (float) floatToIntMultiplier;
+      Debug.Log(minValue);
       float maxValue = (float) minMaxHeight[1] / (float) floatToIntMultiplier;
-
+      Debug.Log(maxValue);
+      
       for (int i = 0; i < heightMap.Length; i++) {
          heightMap[i] = Mathf.InverseLerp (minValue, maxValue, heightMap[i]);
       }
+      Debug.Log("test2");
 
       return heightMap;
    }

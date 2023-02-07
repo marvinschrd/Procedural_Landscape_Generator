@@ -19,9 +19,7 @@ public static class MeshGenerator
 
       int meshLevelOfDetailIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
       int verticesPerLine = (width - 1) / meshLevelOfDetailIncrement + 1;
-      
-      Debug.Log(verticesPerLine);
-      
+
       MeshData meshData = new MeshData(verticesPerLine, verticesPerLine);
       int vertexIndex = 0;
 

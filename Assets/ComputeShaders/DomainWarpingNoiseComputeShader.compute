@@ -1,13 +1,12 @@
 #pragma kernel CSMain
 
-RWStructuredBuffer<float> heightMap;
+RWStructuredBuffer<float> heightmapComputeBuffer;
 RWStructuredBuffer<int> minMax;
-StructuredBuffer<float2> offsets;
+StructuredBuffer<float2> offsetBuffer;
 int floatToIntMultiplier;
 
 int mapSize;
 int octaves;
-int noiseEffect;
 float lacunarity;
 float persistence;
 float scaleFactor;
@@ -100,23 +99,21 @@ float snoise(float2 v)
     g.z = a0.z * x2.x + h.z * x2.y;
     return (130.0 * dot(m, g)) * 0.5 + 0.5;
 }
-
  
 
  float FBM(float2 mapPoint)
 {
     // float G = Mathf.Pow(2, -H); // G = persitance;
-    float G = persistence;
     float frequency = 1.0f;
     float amplitude = 1.0f;
     float height = 0.0f;
     for (int i = 0; i < octaves; ++i)
     {
-        float2 tempPoint = float2(mapPoint.x * frequency + offsets[i].x, mapPoint.y * frequency + offsets[i].y);
+        float2 tempPoint = float2(mapPoint.x * frequency + offsetBuffer[i].x, mapPoint.y * frequency + offsetBuffer[i].y);
         float noiseValue = snoise(tempPoint);
         
         height += noiseValue * amplitude;
-        amplitude *= G;
+        amplitude *= persistence;
         frequency *= lacunarity;
     }
 
@@ -141,7 +138,6 @@ float Pattern(float2 mapPoint)
     float2 r2 = mapPoint + displacementFactor * r;
       
     float noiseValue = FBM(r2);
-    //Debug.Log(noiseValue);
     return noiseValue;
 }
 
@@ -156,13 +152,13 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float sampleX = (x - halfSize) / scaleFactor;
     float sampleY = (y - halfSize) / scaleFactor;
 
-    float2 mapPoint = float2(sampleX, sampleY);
+    float2 mapPoint = float2(x, y);
 
     // Compute domain warping noise value for id.x 
     float noiseValue = Pattern(mapPoint);
-    heightMap[id.x] = noiseValue;
+    heightmapComputeBuffer[id.x] = noiseValue;
     
-    int value = int(heightMap[id.x] * floatToIntMultiplier);
+    int value = int(heightmapComputeBuffer[id.x] * floatToIntMultiplier);
     InterlockedMin(minMax[0],value);
     InterlockedMax(minMax[1],value); 
 }
